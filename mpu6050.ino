@@ -4,7 +4,6 @@
 #include <std_srvs/SetBool.h>
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/String.h>
-#include <Time.h>
 #include <Wire.h>
 #include "Trigger.h"
 #include "MPU6050.h"
@@ -112,15 +111,6 @@ void loop()
     publishing = false;
     camera.sequence = 0;
     imu_sequence = 0;
-    time_set = false;
-  }
-  // if RTC hasnt been set, set it to ros time now
-  else if (nh.connected() && !time_set)
-  {
-    ros::Time pc_now = nh.now();
-    time_t t = pc_now.sec;
-    setTime(hour(t), minute(t), second(t), day(t), month(t), year(t));
-    time_set = true;
   }
 
   nh.spinOnce();
@@ -219,33 +209,35 @@ bool ppsCallback(const SetBool::Request &req, SetBool::Response &res)
 String getTimeNow()
 {
   String time_formatted;
-  int hours = hour(), minutes = minute(), seconds = second();
+  int ts = nh.now().sec;
+  int nsec = (nh.now().nsec) / 1000000;
+  int h = (ts / 3600) % 24, min = (ts / 60) % 60, sec = ts % 60;
   String hours_s, minutes_s, seconds_s;
-  if (hours < 10)
+  if (h < 10)
   {
-    hours_s = "0" + String(hours);
+    hours_s = "0" + String(h);
   }
   else
   {
-    hours_s = String(hours);
+    hours_s = String(h);
   }
-  if (minutes < 10)
+  if (min < 10)
   {
-    minutes_s = "0" + String(minutes);
+    minutes_s = "0" + String(min);
   }
   else
   {
-    minutes_s = String(minutes);
+    minutes_s = String(min);
   }
-  if (seconds < 10)
+  if (sec < 10)
   {
-    seconds_s = "0" + String(seconds);
+    seconds_s = "0" + String(sec);
   }
   else
   {
-    seconds_s = String(seconds);
+    seconds_s = String(sec);
   }
-  time_formatted = hours_s + minutes_s + seconds_s;
+  time_formatted = hours_s + minutes_s + seconds_s + "." + String(nsec);
   return time_formatted;
 }
 /* COmputes XOR checksum of NMEA sentnece */
