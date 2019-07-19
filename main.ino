@@ -14,21 +14,24 @@ ros::NodeHandle nh;
 Trigger camera(2, 0.35, 50000);
 std_msgs::Header cam_msg;
 ros::Publisher F1_time("/F1/cam_time", &cam_msg);
+ros::Publisher F2_time("/F2/cam_time", &cam_msg);
 ros::Publisher F3_time("/F3/cam_time", &cam_msg);
 ros::Publisher F4_time("/F4/cam_time", &cam_msg);
-bool F1publishing = false, F4publishing = false, F3publishing = false;
-uint32_t F1sequence = 0, F3sequence = 0, F4sequence = 0;
+bool F1publishing = false, F2publishing = false, F4publishing = false, F3publishing = false;
+uint32_t F1sequence = 0, F3sequence = 0, F4sequence = 0, F2sequence = 0;
 /* Trigger variables for lidar */
 Trigger pps(3, 0.01, 1000000);
 bool arduino_pps = true;
 /* Forward function declarations */
 void F1Callback(const std_msgs::Bool &msg);
+void F2Callback(const std_msgs::Bool &msg);
 void F4Callback(const std_msgs::Bool &msg);
 void F3Callback(const std_msgs::Bool &msg);
 bool ppsCallback(const SetBool::Request &req, SetBool::Response &res);
 String checksum(String msg);
 String getTimeNow();
 ros::Subscriber<std_msgs::Bool> toggleF1("/F1/toggle", F1Callback);
+ros::Subscriber<std_msgs::Bool> toggleF2("/F2/toggle", F1Callback);
 ros::Subscriber<std_msgs::Bool> toggleF4("/F4/toggle", F4Callback);
 ros::Subscriber<std_msgs::Bool> toggleF3("/F3/toggle", F3Callback);
 ros::ServiceServer<SetBool::Request, SetBool::Response> server("arduino_pps", &ppsCallback);
@@ -38,17 +41,18 @@ ros::ServiceServer<SetBool::Request, SetBool::Response> server("arduino_pps", &p
  * This function performs:
  *  - Advertisement and subscribing to ROS topics
  *  - UART Serial setup for NMEA strings
- *  - IMU setup and calibration
  *  - Holds until rosserial is connected
  */
 void setup()
 {
   nh.initNode();
   nh.advertise(F1_time);
+  nh.advertise(F2_time);
   nh.advertise(F3_time);
   nh.advertise(F4_time);
   nh.advertiseService(server);
   nh.subscribe(toggleF1);
+  nh.subscribe(toggleF2);
   nh.subscribe(toggleF3);
   nh.subscribe(toggleF4);
   GPSERIAL.begin(9600);
@@ -63,7 +67,6 @@ void setup()
  * Continously looping function performs the following:
  *  - Triggering camera line at certain frequency and publishes the timestamp to /cam_time
  *  - Trigger lidar line (PPS) and transmits NMEA string over Serial1
- *  - Reads data from IMU (over i2c) and publishes to /imu0 at certain frequency
  */
 void loop()
 {
@@ -86,6 +89,14 @@ void loop()
       cam_msg.frame_id = "F1";
       F1_time.publish(&cam_msg);
       F1sequence++;
+    }
+    if (F2publishing)
+    {
+      cam_msg.seq = F2sequence;
+      cam_msg.stamp = t;
+      cam_msg.frame_id = "F2";
+      F2_time.publish(&cam_msg);
+      F2sequence++;
     }
     if (F3publishing)
     {
@@ -121,10 +132,14 @@ void loop()
  *            Helper functions                 *
  ***********************************************/
 
-/* Callback for /toggle to being publishing */
+/* Callbacks for /toggle to begin publishing */
 void F1Callback(const std_msgs::Bool &msg)
 {
   F1publishing = msg.data;
+}
+void F2Callback(const std_msgs::Bool &msg)
+{
+  F2publishing = msg.data;
 }
 void F4Callback(const std_msgs::Bool &msg)
 {
