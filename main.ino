@@ -31,7 +31,7 @@ bool ppsCallback(const SetBool::Request &req, SetBool::Response &res);
 String checksum(String msg);
 String getTimeNow();
 ros::Subscriber<std_msgs::Bool> toggleF1("/F1/toggle", F1Callback);
-ros::Subscriber<std_msgs::Bool> toggleF2("/F2/toggle", F1Callback);
+ros::Subscriber<std_msgs::Bool> toggleF2("/F2/toggle", F2Callback);
 ros::Subscriber<std_msgs::Bool> toggleF4("/F4/toggle", F4Callback);
 ros::Subscriber<std_msgs::Bool> toggleF3("/F3/toggle", F3Callback);
 ros::ServiceServer<SetBool::Request, SetBool::Response> server("arduino_pps", &ppsCallback);
@@ -73,8 +73,8 @@ void loop()
   // If rosserial disconnects, stop publishing cam_time and imu0 and reset to 0
   if (!nh.connected())
   {
-    F1publishing = false, F3publishing = false, F4publishing = false;
-    F1sequence = 0, F3sequence = 0, F4sequence = 0;
+    F1publishing = false, F2publishing = false, F3publishing = false, F4publishing = false;
+    F1sequence = 0, F2sequence = 0, F3sequence = 0, F4sequence = 0;
   }
 
   nh.spinOnce();
@@ -122,7 +122,9 @@ void loop()
     {
       delay(30);
       String time_now = getTimeNow();
-      String nmea_string = "GPRMC," + time_now + ",A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W,A";
+      String nmea_string = "GPRMC," + time_now + ",A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W";
+      String chk = checksum(nmea_string);
+      nmea_string += "*" + chk + "\n";
       GPSERIAL.print(nmea_string);
     }
   }
