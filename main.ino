@@ -124,7 +124,7 @@ void loop()
       String time_now = getTimeNow();
       String nmea_string = "GPRMC," + time_now + ",A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W";
       String chk = checksum(nmea_string);
-      nmea_string += "*" + chk + "\n";
+      nmea_string = "$" + nmea_string + "*" + chk + "\n";
       GPSERIAL.print(nmea_string);
     }
   }
