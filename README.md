@@ -24,3 +24,7 @@ This arduino script performs 3 main tasks:
 3. Constructs and sends an NMEA packet to send over UART serial in concert with the PPS for the lidars to use for synchronisation.
 
 The Teensy is time synchronised via rosserial and therefore rosserial needs to be running on the host computer for this method to properly synchronise with the PC. It does this by waiting in the setup function until a connection with rosserial is gained, at which point, it will continue into the main loop.
+
+## Notes
+
+For instructions on editing the Teensy software, refer to the rosserial wiki: http://wiki.ros.org/rosserial_arduino/Tutorials/Arduino%20IDE%20Setup
