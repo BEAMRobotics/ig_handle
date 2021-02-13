@@ -2,13 +2,21 @@
 #include <std_msgs/Header.h>
 #include <std_msgs/Bool.h>
 #include <std_srvs/SetBool.h>
-#include <sensor_msgs/Imu.h>
+//#include <sensor_msgs/Imu.h>
 #include <FrequencyTimer2.h>
 #include <TimeLib.h>
 #include "Trigger.h"
 
 #define GPSERIAL Serial1
 #define PPS_PIN 6
+#define IMU_IN 12
+#define CAM0_OUT 2
+#define CAM1_OUT 7
+#define CAM2_OUT 8
+#define CAM0_IN 9
+#define CAM1_IN 10
+#define CAM2_IN 11
+
 using std_srvs::SetBool;
 
 /* ROS node handler */
@@ -29,9 +37,9 @@ using std_srvs::SetBool;
 //void F4Callback(const std_msgs::Bool &msg);
 //void F3Callback(const std_msgs::Bool &msg);
 void setSendNMEA(void);
+void enableTriggers(bool onOff);
 //bool ppsCallback(const SetBool::Request &req, SetBool::Response &res);
 //String checksum(String msg);
-//String getTimeNow();
 //ros::Subscriber<std_msgs::Bool> toggleF1("/F1/toggle", F1Callback);
 //ros::Subscriber<std_msgs::Bool> toggleF2("/F2/toggle", F2Callback);
 //ros::Subscriber<std_msgs::Bool> toggleF4("/F4/toggle", F4Callback);
@@ -39,33 +47,45 @@ void setSendNMEA(void);
 //ros::ServiceServer<SetBool::Request, SetBool::Response> server("arduino_pps", &ppsCallback);
 
 volatile bool sendNMEA = false;
+volatile elapsedMicros microsSincePPS;
 
 /*
  * Initial setup for the arduino sketch
  * This function performs:
+ *  - Configure timers for LiDAR and camera triggering
  *  - Advertisement and subscribing to ROS topics
  *  - UART Serial setup for NMEA strings
  *  - Holds until rosserial is connected
  */
 void setup()
 {
-  /* set up PPS but don't start it yet */
+  /* In future maybe there'll be a subscriber to get settings from the main PC */
+  
+  /* Setup outputs to LiDAR
+   *    - PPS but don't start it yet
+        - Attach */
   pinMode(PPS_PIN, OUTPUT); // pin 5 is still driven by default but has a 50% duty cycle
   FrequencyTimer2::setPeriod(1000000);     // 10^6 microseconds, 1 second
   FrequencyTimer2::setOnOverflow(setSendNMEA);  // sets the function that runs when the timer overflows
-  
-//  nh.initNode();
-//  nh.advertise(F1_time);
-//  nh.advertise(F2_time);
-//  nh.advertise(F3_time);
-//  nh.advertise(F4_time);
-//  nh.advertiseService(server);
-//  nh.subscribe(toggleF1);
-//  nh.subscribe(toggleF2);
-//  nh.subscribe(toggleF3);
-//  nh.subscribe(toggleF4);
-  GPSERIAL.begin(9600);     // 9600 baud, 8N1, according to Velodyne Puck datasheet
-  UART0_C3 = 16;            // inverts logic levels
+
+  /* set up the camera triggers but don't start them yet either */
+  analogWriteFrequency(CAM0_OUT, 20.0); // 20.0 Hz base frequency for the PWM signal
+  analogWriteFrequency(CAM0_OUT, 20.0); // We're using a PWM signal because it's a way of offloading
+  analogWriteFrequency(CAM0_OUT, 20.0); // the task to free up the main loop
+
+  /* node initialization
+  nh.initNode();
+  nh.advertise(F1_time);
+  nh.advertise(F2_time);
+  nh.advertise(F3_time);
+  nh.advertise(F4_time);
+  nh.advertiseService(server);
+  nh.subscribe(toggleF1);
+  nh.subscribe(toggleF2);
+  nh.subscribe(toggleF3);
+  nh.subscribe(toggleF4);
+  */
+
 //  while (!nh.connected())
 //  {
 //    nh.spinOnce();
@@ -74,7 +94,15 @@ void setup()
   
 //  Teensy3Clock.set(nh.now());           // Initialize RTC with time
 //  setTime(nh.now());
-//  Serial
+
+  /* start all the timers */
+  enableTriggers(true);
+
+  /* enable interrupts */
+  pinMode(CAM0_IN, INPUT_PULLUP
+  attachInterrupt(digitalPinToInterrupt(CAM0_IN), cam0_ISR, RISING); // Falling or rising TBD
+  attachInterrupt(digitalPinToInterrupt(CAM0_IN), cam0_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM0_IN), cam0_ISR, RISING);
 }
 
 /*
@@ -84,20 +112,18 @@ void setup()
  */
 void loop()
 {
-  FrequencyTimer2::enable();
   if (sendNMEA == true) {
-    delay(1);
-    digitalWrite(PPS_PIN, LOW); // minimum pulse duration required by LiDAR is 10 us (digitalWrite is kinda slow so no delay required. Tested with oscilloscope)
     char time_now[7], date_now[7];
     sprintf(time_now, "%02u%02i%02i", hour(), minute(), second());
     sprintf(date_now, "%02u%02i%02i", day(), month(), year()-2000);
-    String nmea_string = "GPRMC," + String(time_now) + ",A,4807.038,N,01131.000,E,022.4,084.4," + String(date_now) + ",003.1,W";
+    String nmea_string = F("GPRMC,") + String(time_now) + F(",A,4807.038,N,01131.000,E,022.4,084.4,") + String(date_now) + ",003.1,W";
     String chk = checksum(nmea_string);
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
     GPSERIAL.print(nmea_string);
     sendNMEA = false;
+    digitalWriteFast(PPS_PIN, LOW); // minimum pulse duration required by LiDAR is 10 us
 
-    Serial.print(nmea_string);
+    Serial.print(nmea_string);  // for debugging
   }
   
 //  // If rosserial disconnects, stop publishing cam_time and imu0 and reset to 0
@@ -184,7 +210,9 @@ void setSendNMEA(void) {
    */
   digitalWriteFast(PPS_PIN, HIGH);
   sendNMEA = true;
+  microsSincePPS = 0;
 }
+
 /* COmputes XOR checksum of NMEA sentence */
 String checksum(String msg)
 {
@@ -201,4 +229,19 @@ String checksum(String msg)
     result = "0" + result;
   }
   return result;
+}
+
+enableTriggers(bool onOff)
+{
+  if (onOff)
+  {
+    FrequencyTimer2::enable();
+  } 
+  else
+  {
+    FrequencyTimer2::disable();
+  }
+  analogWrite(CAM0_OUT, 5 * onOff);   // 5% duty cycle @ 20 Hz = 2.5 ms pulse
+  analogWrite(CAM1_OUT, 5 * onOff);
+  analogWrite(CAM2_OUT, 5 * onOff);
 }
