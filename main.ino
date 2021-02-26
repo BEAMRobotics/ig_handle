@@ -27,10 +27,10 @@ ros::Publisher F1_time("/F1/cam_time", &cam_msg);
 ros::Publisher F2_time("/F2/cam_time", &cam_msg);
 ros::Publisher F3_time("/F3/cam_time", &cam_msg);
 ros::Publisher IMU_time("/imu/imu_time", &cam_msg);
-bool arduino_pps, F1publishing = false, F2publishing = false, F3publishing = false, IMUpublishing = false;
+bool arduino_pps, F1publishing = true, F2publishing = true, F3publishing = true, IMUpublishing = true;
 uint32_t F1sequence = 0, F2sequence = 0, F3sequence = 0, IMUsequence = 0;
 volatile bool sendNMEA = false, F1_closed = false, F2_closed = false, F3_closed = false, IMU_sampled = false;
-volatile elapsedMicros microsSincePPS;
+ elapsedMicros microsSincePPS;
 volatile uint32_t F1_close_s, F1_close_us, F2_close_s, F2_close_us, F3_close_s, F3_close_us, IMU_sample_s, IMU_sample_us;
 
 ///* Forward function declarations */
@@ -74,23 +74,28 @@ void setup()
   analogWriteFrequency(CAM2_OUT, 20.0); // We're using a PWM signal because it's a way of offloading
   analogWriteFrequency(CAM3_OUT, 20.0); // the task to free up the main loop
 
-//  /* node initialization
-//  nh.initNode();
-//  nh.advertise(F1_time);
-//  nh.advertise(F2_time);
-//  nh.advertise(F3_time);
-//  nh.advertise(IMU_time);
-////  nh.advertiseService(server);
-//  nh.subscribe(toggleF1);
-//  nh.subscribe(toggleF2);
-//  nh.subscribe(toggleF3);
-//  nh.subscribe(toggleIMU);
-//  */
+  /* configure input pins */
+  pinMode(CAM1_IN, INPUT_PULLUP);
+  pinMode(CAM2_IN, INPUT_PULLUP);
+  pinMode(CAM3_IN, INPUT_PULLUP);
+  pinMode(IMU_IN, INPUT);
 
-//  while (!nh.connected())
-//  {
-//    nh.spinOnce();
-//  }
+// node initialization
+  nh.initNode();
+  nh.advertise(F1_time);
+  nh.advertise(F2_time);
+  nh.advertise(F3_time);
+  nh.advertise(IMU_time);
+////  nh.advertiseService(server);
+  nh.subscribe(toggleF1);
+  nh.subscribe(toggleF2);
+  nh.subscribe(toggleF3);
+  nh.subscribe(toggleIMU);
+
+  while (!nh.connected())
+  {
+    nh.spinOnce();
+  }
 //  setSyncProvider((time_t) Teensy3Clock.get);  // Arduino time library will use the onboard RTC
 
   // TODO: convert from ros::Time to TimeLib time format
@@ -100,15 +105,7 @@ void setup()
   /* start all the timers */
   enableTriggers(true);
 
-  /* enable interrupts */
-  pinMode(CAM1_IN, INPUT_PULLUP);
-  pinMode(CAM2_IN, INPUT_PULLUP);
-  pinMode(CAM3_IN, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING); // Falling or rising TBD
-  attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
-
-  Serial.begin(115200);
+  Serial.begin(57600);
 }
 
 /*
@@ -129,7 +126,7 @@ void loop()
     sendNMEA = false;
     digitalWriteFast(PPS_PIN, LOW); // minimum pulse duration required by LiDAR is 10 us
 
-    Serial.print(nmea_string);  // for debugging
+//    Serial.print(nmea_string);  // for debugging
   }
   if ((F1_closed && F1publishing) == true) {
     cam_msg.seq = F1sequence;
@@ -174,7 +171,7 @@ void loop()
     F1sequence = 0, F2sequence = 0, F3sequence = 0, IMUsequence = 0;
   }
 
-//  nh.spinOnce();
+  nh.spinOnce();
   /* Handle camera triggering and stamping here */
 
 }
@@ -272,4 +269,13 @@ void enableTriggers(bool onOff)
   analogWrite(CAM1_OUT, 5 * onOff);   // 5% duty cycle @ 20 Hz = 2.5 ms pulse
   analogWrite(CAM2_OUT, 5 * onOff);
   analogWrite(CAM3_OUT, 5 * onOff);
+  F1publishing = true;
+  F2publishing = true;
+  F3publishing = true;
+  IMUpublishing = true;
+
+  /* enable interrupts */
+  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING); // Falling or rising TBD
+  attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
 }
