@@ -1,0 +1,9 @@
+<library path="lib/libexample_package_nodelet">
+    <class name="example_package/example_package_nodelet"
+           type="example_package::ExamplePackageNodelet"
+           base_class_type="nodelet::Nodelet">
+        <description>
+           Route Publisher Nodelet.
+        </description>
+    </class>
+</library>

@@ -1,5 +1,4 @@
 # ig_handle
 
-For running ig_handle to collect timestamped data.
+package designed to operate the ig handle
 
-Currently uses the Sonar node as boilerplate, but this will be removed.
