@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>ig_handle</name>
-    <version>0.0.1</version>
-    <description>package containing all necessary code to operate the ig_handle</description>
+    <version>0.0.2</version>
+    <description>This package contains all necessary code to operate ig_handle.</description>
     <maintainer email="gearle@uwaterloo.ca">msmart</maintainer>
     <license>TODO</license>
     <author>gearle@uwaterloo.ca</author>
 
     <buildtool_depend>catkin</buildtool_depend>
     <depend>roscpp</depend>
-    <depend>roslib</depend>
-    <depend>nodelet</depend>
-    <!-- The export tag contains other, unspecified, tags -->
-    <export>
-        <nodelet plugin="${prefix}/nodelets.xml"/>
-    </export>
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <!-- Other tools can request additional information be placed here -->
+    
+  </export>
 </package>

@@ -1,5 +1,0 @@
-<launch>
-    <node pkg="example_package" type="example_package_node" name="example_package" output="screen">
-        <rosparam command="load" file="$(find example_package)/config/example_params.yaml" />
-    </node>
-</launch>

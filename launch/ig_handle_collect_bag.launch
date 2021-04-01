@@ -1,0 +1,4 @@
+<launch>
+    <node name="ig_handle_start_handle" pkg="ig_handle" type="start_handle.sh"/>
+    <node name="ig_handle_collect_bag" pkg="ig_handle" type="collect_bag.sh" output="screen" args="~/gabe_ws/bags"/>
+</launch>
