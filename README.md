@@ -28,6 +28,10 @@ TODO:
 -add install script
     >install dependencies (rosserial-python, camera stuff, etc)
     >make scripts/*.sh executable with chmod
+<<<<<<< HEAD
     >etc.
 
 >>>>>>> 8685c81... scan/bag scripts
+=======
+    >etc.
+>>>>>>> cea04a1... cam sync progress

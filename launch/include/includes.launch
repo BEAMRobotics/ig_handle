@@ -1,7 +1,7 @@
-
 <launch>
   <!-- Start ros serial -->
   <include file="$(find ig_handle)/launch/include/start_rosserial.launch" />
+  <include file="$(find ig_handle)/launch/include/start_cam_F1.launch" />
 
   <!-- Run System Monitor -->
   <!-- <include file="$(find ig_handle)/launch/include/system_monitor.launch" /> -->
