@@ -27,4 +27,3 @@ TODO:
     >install dependencies (rosserial-python, camera stuff, etc)
     >make scripts/*.sh executable with chmod
     >etc.
-
