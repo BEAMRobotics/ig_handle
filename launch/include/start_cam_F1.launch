@@ -36,9 +36,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <node pkg="nodelet" type="nodelet" name="spinnaker_camera_nodelet"
           args="load spinnaker_camera_driver/SpinnakerCameraNodelet camera_nodelet_manager" >
 
-      <param name="frame_id" value="F1_link" />
       <param name="serial" value="$(arg camera_serial)" />
-      <param name="enable_synchronisation" value="true"/>
       <!-- triggering options provided in config/ -->
       <rosparam command="load" file="$(find ig_handle)/config/ig_handle_flir_config.yaml" />
 
