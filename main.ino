@@ -278,5 +278,5 @@ void enableTriggers(bool onOff)
   attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING); // Falling or rising TBD
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(IMU_IN), imu_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
 }
