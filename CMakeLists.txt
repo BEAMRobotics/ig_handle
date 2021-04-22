@@ -20,13 +20,16 @@ catkin_package(
 ## Build ##
  
 include_directories(
+    include
     ${catkin_INCLUDE_DIRS}
     ${roscpp_INCLUDE_DIRS}
 )
 
 
-add_library(restamp_nodelet src/restamp_nodelet.cpp)
-target_link_libraries(restamp_nodelet ${catkin_LIBRARIES})
+add_library(generate_nodelets 
+  src/generate_nodelets.cpp
+  src/restamp_nodelet.cpp)
+target_link_libraries(generate_nodelets ${catkin_LIBRARIES})
 
 add_executable(restamp_node src/restamp_node.cpp)
 target_link_libraries(restamp_node ${catkin_LIBRARIES})
@@ -34,7 +37,7 @@ target_link_libraries(restamp_node ${catkin_LIBRARIES})
 ## Install ##
 install(TARGETS 
   restamp_node
-  restamp_nodelet
+  generate_nodelets
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
