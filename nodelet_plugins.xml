@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<library path="lib/librestamp_nodelet">
+  <class name="ig_handle/restamp_nodelet" type="ig_handle::restamp_nodelet" base_class_type="nodelet::Nodelet">
+    <description>Nodelet for restamping sensor messages from one topic with headers from another topic.</description>
+  </class>
+</library>
