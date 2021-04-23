@@ -1,5 +1,3 @@
-#include <ig_handle/restamp_nodelet.h>
-
 #include <iostream>
 #include <string>
 

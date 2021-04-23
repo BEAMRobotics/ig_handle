@@ -12,8 +12,9 @@
     <depend>roscpp</depend>
     <depend>nodelet</depend>
     <depend>sensor_msgs</depend>
+    <depend>wfov_camera_msgs</depend>
 
   <export>
-    <nodelet plugin="${prefix}/nodelet_plugins.xml" />    
+    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
   </export>
 </package>

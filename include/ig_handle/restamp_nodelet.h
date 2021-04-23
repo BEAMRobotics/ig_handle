@@ -1,11 +1,10 @@
 #pragma once
 
+#include <nodelet/nodelet.h>
+#include <ros/ros.h>
 #include <std_msgs/Header.h>
 
 #include <boost/thread.hpp>
-
-#include "nodelet/nodelet.h"
-#include "ros/ros.h"
 
 namespace ig_handle {
 
@@ -39,3 +38,5 @@ class restamp_nodelet : public nodelet::Nodelet {
   ros::Publisher pub_;
 };
 }  // namespace ig_handle
+
+#include "ig_handle/impl/restamp_nodelet.hpp"
