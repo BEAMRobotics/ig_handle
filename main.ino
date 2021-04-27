@@ -260,6 +260,7 @@ void enableTriggers(bool onOff)
 {
   if (onOff)
   {
+    while(micros() % 1000000){}
     FrequencyTimer2::enable();
   } 
   else
