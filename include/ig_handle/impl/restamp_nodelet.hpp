@@ -8,13 +8,15 @@ void restamp_nodelet<T>::onInit() {
   ros::NodeHandle& nh = getNodeHandle();
   ros::NodeHandle& pnh = getPrivateNodeHandle();
 
-  pnh.param<int>("max_buffer_size", max_buffer_size, 1000);
+  pnh.getParam("max_buffer_size", max_buffer_size);
 
   if (!pnh.getParam("data_topic", data_topic_) ||
       !pnh.getParam("time_topic", time_topic_)) {
     ROS_ERROR("Please provide a data_topic and time_topic parameter.");
     return;
   }
+  ROS_INFO_STREAM("data topic: " << data_topic_);
+  ROS_INFO_STREAM("time topic: " << time_topic_);
 
   data_buffer_.reserve(max_buffer_size);
   time_buffer_.reserve(max_buffer_size);
@@ -33,7 +35,7 @@ void restamp_nodelet<T>::onInit() {
 template <typename T>
 void restamp_nodelet<T>::dataCb(const typename T::ConstPtr& msg) {
   if (data_buffer_.size() >= max_buffer_size) {
-    ROS_ERROR_STREAM("Max buffer size exceeded.  Data with sequence "
+    ROS_ERROR_STREAM("Data buffer at max size.  Data with sequence "
                      << msg->header.seq << " will be dropped.");
     return;
   }
@@ -51,7 +53,7 @@ void restamp_nodelet<T>::dataCb(const typename T::ConstPtr& msg) {
 template <typename T>
 void restamp_nodelet<T>::timeCb(const std_msgs::Header::ConstPtr& msg) {
   if (data_buffer_.size() >= max_buffer_size) {
-    ROS_ERROR_STREAM("Max buffer size exceeded.  Timestamp with sequence "
+    ROS_ERROR_STREAM("Time buffer at max size.  Timestamp with sequence "
                      << msg->seq << " will be dropped.");
     return;
   }

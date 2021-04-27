@@ -34,21 +34,8 @@ target_link_libraries(restamp_nodelets
   ${catkin_LIBRARIES}
   )
 
-## Node version of restamper
-add_executable(restamp_node
-  src/restamp_node.cpp
-)
-target_include_directories(restamp_node
-  PUBLIC
-    ${catkin_INCLUDE_DIRS}
-)
-target_link_libraries(restamp_node
-  ${catkin_LIBRARIES}
-)
-
 ## Install ##
 install(TARGETS 
-  restamp_node
   restamp_nodelets
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
