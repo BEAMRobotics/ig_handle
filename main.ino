@@ -130,7 +130,7 @@ void loop()
   }
   if ((F1_closed && F1publishing) == true) {
     cam_msg.seq = F1sequence;
-    cam_msg.stamp = ros::Time(F1_close_s, F1_close_us);
+    cam_msg.stamp = ros::Time(F1_close_s, F1_close_us*10^3);
     cam_msg.frame_id = "F1";
     F1_time.publish(&cam_msg);
     F1sequence++;
@@ -139,7 +139,7 @@ void loop()
 //  if (F2_closed == true) {
   if ((F2_closed && F2publishing) == true) {
     cam_msg.seq = F2sequence;
-    cam_msg.stamp = ros::Time(F2_close_s, F2_close_us);
+    cam_msg.stamp = ros::Time(F2_close_s, F2_close_us*10^3);
     cam_msg.frame_id = "F2";
     F2_time.publish(&cam_msg);
     F2sequence++;
@@ -148,7 +148,7 @@ void loop()
 //  if (F3_closed == true) {
   if ((F3_closed && F3publishing) == true) {
     cam_msg.seq = F3sequence;
-    cam_msg.stamp = ros::Time(F3_close_s, F3_close_us);
+    cam_msg.stamp = ros::Time(F3_close_s, F3_close_us*10^3);
     cam_msg.frame_id = "F3";
     F3_time.publish(&cam_msg);
     F3sequence++;
@@ -157,7 +157,7 @@ void loop()
 //  if (IMU_sampled == true) {
   if ((IMU_sampled && IMUpublishing) == true) {
     cam_msg.seq = IMUsequence;
-    cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us);
+    cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us*10^3);
     cam_msg.frame_id = "imu";
     IMU_time.publish(&cam_msg);
     IMUsequence++;
