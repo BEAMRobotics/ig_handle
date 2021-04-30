@@ -26,8 +26,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 <launch>
    <!-- Determine this using rosrun spinnaker_camera_driver list_cameras.
        If not specified, defaults to first camera found. -->
-  <arg name="camera_name"               default="F1" />
-  <arg name="camera_serial"             default="18285454" />
+  <arg name="camera_name"               default="F3" />
+  <arg name="camera_serial"             default="19194267" />
   <arg name="calibrated"                default="0" />
 
   <group ns="$(arg camera_name)">
@@ -53,8 +53,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <node pkg="nodelet" type="nodelet" name="camera_restamp_nodelet"
       args="load ig_handle/camera_restamp_nodelet camera_nodelet_manager" >
       <param name="max_buffer_size" value="100"/>
-      <param name="data_topic" value="/F1/image_raw"/>
-      <param name="time_topic" value="/F1/cam_time"/>
+      <param name="data_topic" value="/F3/image_raw"/>
+      <param name="time_topic" value="/F3/cam_time"/>
     </node>
 
     <!-- Debayering nodelet -->

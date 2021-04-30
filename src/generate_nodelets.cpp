@@ -1,14 +1,13 @@
-#include "ig_handle/restamp_nodelet.h"
-
 #include <pluginlib/class_list_macros.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
-#include <wfov_camera_msgs/WFOVImage.h>
+
+#include "ig_handle/restamp_nodelet.h"
 
 namespace ig_handle {
 
 using imu_restamp_nodelet = ig_handle::restamp_nodelet<sensor_msgs::Imu>;
-using camera_restamp_nodelet =
-    ig_handle::restamp_nodelet<wfov_camera_msgs::WFOVImage>;
+using camera_restamp_nodelet = ig_handle::restamp_nodelet<sensor_msgs::Image>;
 
 }  // namespace ig_handle
 

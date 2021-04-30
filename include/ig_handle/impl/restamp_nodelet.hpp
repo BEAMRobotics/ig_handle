@@ -15,8 +15,6 @@ void restamp_nodelet<T>::onInit() {
     ROS_ERROR("Please provide a data_topic and time_topic parameter.");
     return;
   }
-  ROS_INFO_STREAM("data topic: " << data_topic_);
-  ROS_INFO_STREAM("time topic: " << time_topic_);
 
   data_buffer_.reserve(max_buffer_size);
   time_buffer_.reserve(max_buffer_size);

@@ -10,29 +10,30 @@ find_package(catkin REQUIRED COMPONENTS
   nodelet
   roscpp
   sensor_msgs
-  wfov_camera_msgs
 )
+
 catkin_package(
   CATKIN_DEPENDS
     roscpp
     nodelet
     sensor_msgs
-    wfov_camera_msgs
 )
 
 ## Build ##
 ## Main library
 add_library(restamp_nodelets
   src/generate_nodelets.cpp
-  )
+)
+
 target_include_directories(restamp_nodelets
   PUBLIC
     include
     ${catkin_INCLUDE_DIRS}
 )
+
 target_link_libraries(restamp_nodelets
   ${catkin_LIBRARIES}
-  )
+)
 
 ## Install ##
 install(TARGETS 
