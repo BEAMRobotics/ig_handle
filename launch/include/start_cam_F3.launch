@@ -32,11 +32,11 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 
   <group ns="$(arg camera_name)">
     <!-- Nodelet manager -->
-    <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" cwd="node" output="screen"/>
+    <node pkg="nodelet" type="nodelet" name="$(arg camera_name)_nodelet_manager" args="manager" cwd="node" output="screen"/>
 
     <!-- Camera nodelet -->
     <node pkg="nodelet" type="nodelet" name="spinnaker_camera_nodelet"
-          args="load spinnaker_camera_driver/SpinnakerCameraNodelet camera_nodelet_manager" >
+          args="load spinnaker_camera_driver/SpinnakerCameraNodelet $(arg camera_name)_nodelet_manager" >
 
       <param name="frame_id"                        value="camera" />
       <param name="serial"                          value="$(arg camera_serial)" />
@@ -51,7 +51,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 
     <!-- Restamping nodelet -->
     <node pkg="nodelet" type="nodelet" name="camera_restamp_nodelet"
-      args="load ig_handle/camera_restamp_nodelet camera_nodelet_manager" >
+      args="load ig_handle/camera_restamp_nodelet $(arg camera_name)_nodelet_manager" >
       <param name="max_buffer_size" value="100"/>
       <param name="data_topic" value="/F3/image_raw"/>
       <param name="time_topic" value="/F3/cam_time"/>
@@ -59,7 +59,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 
     <!-- Debayering nodelet -->
     <node pkg="nodelet" type="nodelet" name="image_proc_debayer"
-          args="load image_proc/debayer camera_nodelet_manager">
+          args="load image_proc/debayer $(arg camera_name)_nodelet_manager">
     </node>
   </group>
 </launch>
