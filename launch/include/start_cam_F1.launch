@@ -53,8 +53,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <node pkg="nodelet" type="nodelet" name="camera_restamp_nodelet"
       args="load ig_handle/camera_restamp_nodelet $(arg camera_name)_nodelet_manager" >
       <param name="max_buffer_size" value="100"/>
-      <param name="data_topic" value="/F1/image_raw"/>
-      <param name="time_topic" value="/F1/cam_time"/>
+      <param name="data_topic" value="/$(arg camera_name)/image_raw"/>
+      <param name="time_topic" value="/$(arg camera_name)/cam_time"/>
     </node>
 
     <!-- Debayering nodelet -->
