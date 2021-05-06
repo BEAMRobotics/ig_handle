@@ -1,11 +1,10 @@
 enable_trigger: 'On'
-exposure_auto: 'Off'
+exposure_auto: 'Continuous'
 exposure_mode: 'Timed'
-exposure_time: 2000
 line_mode: 'Output'
 line_selector: 'Line1'
 line_source: 'ExposureActive'
 trigger_activation_mode: 'RisingEdge'
 trigger_selector: 'FrameStart'
 trigger_source: 'Line0'
-trigger_overlap_mode: 'Off'
+trigger_overlap_mode: 'ReadOut'
