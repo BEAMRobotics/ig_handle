@@ -10,6 +10,7 @@ and the vertical lidar (high res).
     <group ns="lidar_h">
       <!-- declare arguments with default values -->
         <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP-16.yaml"/>
+        <arg name="gps_time" default="false" />
         <arg name="device_ip" default="192.168.1.201" />
         <arg name="frame_id" default="hvlp_link" />
         <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
@@ -25,6 +26,7 @@ and the vertical lidar (high res).
 
       <!-- start nodelet manager and driver nodelets -->
         <include file="$(find velodyne_driver)/launch/nodelet_manager.launch">
+          <arg name="gps_time" value="true" /> 
           <arg name="device_ip" value="$(arg device_ip)"/>
           <arg name="frame_id" value="$(arg frame_id)"/>
           <arg name="manager" value="$(arg manager)" />
