@@ -16,3 +16,4 @@ rosbag record -O $bagDir/ig_handle_scan_$now.bag \
 /F3/cam_time \
 /imu/data/stamped \
 /imu/imu_time \
+/lidar_h/velodyne_packets

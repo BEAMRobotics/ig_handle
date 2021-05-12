@@ -5,7 +5,7 @@
   <node pkg="nodelet" type="nodelet" name="imu_nodelet_manager" args="manager" cwd="node" output="screen"/>
   <node pkg="nodelet" type="nodelet" name="imu_restamp_nodelet"
         args="load ig_handle/imu_restamp_nodelet imu_nodelet_manager" >
-    <param name="max_buffer_size" value="2000"/>
+    <param name="max_buffer_size" value="1000"/>
     <param name="data_topic" value="/imu/data"/>
     <param name="time_topic" value="/imu/imu_time"/>
   </node>
