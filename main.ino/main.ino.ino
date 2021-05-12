@@ -96,11 +96,10 @@ void setup()
   {
     nh.spinOnce();
   }
-//  setSyncProvider((time_t) Teensy3Clock.get);  // Arduino time library will use the onboard RTC
 
-  // TODO: convert from ros::Time to TimeLib time format
-//  Teensy3Clock.set(nh.now());           // Initialize RTC with time
-//  setTime(nh.now());
+// TODO: initialize RTC clock using ROS service
+  setSyncProvider((time_t) Teensy3Clock.get); // set RTC clock as Time library source.
+  setTime(Teensy3Clock.get());
 
   /* start all the timers */
   enableTriggers(true);
@@ -117,8 +116,9 @@ void loop()
 {
   if (sendNMEA == true) {
     char time_now[7], date_now[7];
-    sprintf(time_now, "%02u%02i%02i", hour(), minute(), second());
-    sprintf(date_now, "%02u%02i%02i", day(), month(), year()-2000);
+    time_t t = now();
+    sprintf(time_now, "%02i%02i%02i", hour(t), minute(t), second(t));
+    sprintf(date_now, "%02i%02i%02i", day(t), month(t), year(t) % 100);
     String nmea_string = F("GPRMC,") + String(time_now) + F(",A,4807.038,N,01131.000,E,022.4,084.4,") + String(date_now) + ",003.1,W";
     String chk = checksum(nmea_string);
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
@@ -126,11 +126,12 @@ void loop()
     sendNMEA = false;
     digitalWriteFast(PPS_PIN, LOW); // minimum pulse duration required by LiDAR is 10 us
 
-//    Serial.print(nmea_string);  // for debugging
+    Serial.print(nmea_string);  // for debugging
   }
   if ((F1_closed && F1publishing) == true) {
     cam_msg.seq = F1sequence;
-    cam_msg.stamp = ros::Time(F1_close_s, F1_close_us);
+    cam_msg.stamp = ros::Time(F1_close_s, 1000*F1_close_us);
+    Serial.print(F1_close_s);
     cam_msg.frame_id = "F1";
     F1_time.publish(&cam_msg);
     F1sequence++;
@@ -139,7 +140,7 @@ void loop()
 //  if (F2_closed == true) {
   if ((F2_closed && F2publishing) == true) {
     cam_msg.seq = F2sequence;
-    cam_msg.stamp = ros::Time(F2_close_s, F2_close_us);
+    cam_msg.stamp = ros::Time(F2_close_s, 1000*F2_close_us);
     cam_msg.frame_id = "F2";
     F2_time.publish(&cam_msg);
     F2sequence++;
@@ -148,7 +149,7 @@ void loop()
 //  if (F3_closed == true) {
   if ((F3_closed && F3publishing) == true) {
     cam_msg.seq = F3sequence;
-    cam_msg.stamp = ros::Time(F3_close_s, F3_close_us);
+    cam_msg.stamp = ros::Time(F3_close_s, 1000*F3_close_us);
     cam_msg.frame_id = "F3";
     F3_time.publish(&cam_msg);
     F3sequence++;
@@ -157,7 +158,7 @@ void loop()
 //  if (IMU_sampled == true) {
   if ((IMU_sampled && IMUpublishing) == true) {
     cam_msg.seq = IMUsequence;
-    cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us);
+    cam_msg.stamp = ros::Time(IMU_sample_s, 1000*IMU_sample_us);
     cam_msg.frame_id = "imu";
     IMU_time.publish(&cam_msg);
     IMUsequence++;
@@ -167,6 +168,7 @@ void loop()
   // If rosserial disconnects, stop publishing cam_time and imu0 and reset to 0
   if (!nh.connected())
   {
+    enableTriggers(false);
     F1publishing = false, F2publishing = false, F3publishing = false, IMUpublishing = false;
     F1sequence = 0, F2sequence = 0, F3sequence = 0, IMUsequence = 0;
   }
