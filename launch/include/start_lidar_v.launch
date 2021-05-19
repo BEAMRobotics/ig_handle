@@ -1,23 +1,23 @@
 <!--
-This launch file starts the velodyne driver for the horizontal (Lite).
+This launch file starts the velodyne driver for the vertical lidar (high res).
   - This is for VLP 16 lidars
   - Make sure the correct calibration files are included
  -->
 
 <launch>
-  <!-- For horizontal lidar - VLP 16 Lite: -->
-  <group ns="lidar_h">
-  <!-- declare arguments with default values -->
+  <!-- For vertical lidar - VLP 16 High Res.: -->
+  <group ns="lidar_v">
+    <!-- declare arguments with default values -->
     <arg name="gps_time" default="false" />
-
-    <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP-16.yaml"/>
-    <arg name="device_ip" default="192.168.1.201" />
-    <arg name="frame_id" default="hvlp_link" />
+    
+    <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP-16-HiRes.yaml"/>
+    <arg name="device_ip" default="192.168.1.202" />
+    <arg name="frame_id" default="vvlp_link" />
     <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
     <arg name="max_range" default="130.0" />
     <arg name="min_range" default="0.4" />
     <arg name="pcap" default="" />
-    <arg name="port" default="2368" />
+    <arg name="port" default="2369" />
     <arg name="read_fast" default="false" />
     <arg name="read_once" default="false" />
     <arg name="repeat_delay" default="0.0" />
@@ -40,6 +40,7 @@ This launch file starts the velodyne driver for the horizontal (Lite).
       <arg name="rpm" value="$(arg rpm)"/>
       <arg name="cut_angle" default="3.14159" /> <!-- Start scan behind lidar -->
     </include>
+
 
     <!-- start cloud nodelet -->
     <!-- <include file="$(find velodyne_pointcloud)/launch/cloud_nodelet.launch">
