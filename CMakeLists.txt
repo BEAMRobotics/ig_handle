@@ -9,14 +9,30 @@ add_definitions(-DBOOST_LOG_DYN_LINK)
 find_package(catkin REQUIRED COMPONENTS
   nodelet
   roscpp
+  std_msgs
   sensor_msgs
+  actionlib
+  actionlib_msgs
+  message_generation
+)
+
+add_action_files(
+  DIRECTORY action
+  FILES arduino_sync.action
+)
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs sensor_msgs
 )
 
 catkin_package(
   CATKIN_DEPENDS
     roscpp
     nodelet
+    std_msgs
     sensor_msgs
+    actionlib_msgs
+    message_runtime
 )
 
 ## Build ##
@@ -33,6 +49,25 @@ target_include_directories(restamp_nodelets
 
 target_link_libraries(restamp_nodelets
   ${catkin_LIBRARIES}
+)
+
+add_executable(arduino_sync_server
+  src/arduino_sync_server.cpp
+)
+target_include_directories(arduino_sync_server
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
+    ${catkin_EXPORTED_TARGETS} 
+
+)
+target_link_libraries(arduino_sync_server
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+add_dependencies(arduino_sync_server
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS} 
 )
 
 ## Install ##
