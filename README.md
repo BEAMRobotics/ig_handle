@@ -1,6 +1,6 @@
 # beam_camera_sync
 
-This repository contains the code to accurately timestamp images which have been hardware triggered. This also contains code to perform a spoofed PPS and transmit a NMEA packet to use for synchronizing Velodyne LiDARS.
+This repository contains the code to accurately timestamp images, IMU measurements, and LiDAR scans. This also contains code to perform a spoofed PPS and transmit a NMEA packet to use for synchronizing Velodyne LiDARS.
 
 ## Dependencies:
   * rosserial
@@ -17,12 +17,11 @@ See https://github.com/BEAMRobotics/Handle_ECAD for the schematic.
 ## Overview
 
 This arduino script performs 3 main tasks:
-1. Sends a variable rate signal (20Hz) to trigger cameras, and publishes the timestamp associated with the camera shutter closing to rosserial. (publishing on F1,F2,F3, + /cam_time)
+1. Sending a variable rate signal (20Hz) to trigger cameras. The camera sends a signal back to the Teensy corresponding to the shutter being open. The Teensy publishes the timestamp associated with the camera shutter closing to rosserial. (publishing on F1,F2,F3, + /cam_time)
 2. Creates timestamps for IMU data based on the GPIO output from the IMU into the Teensy
-3. Spoofs a PPS using the onboard clock
-4. Constructs and sends an NMEA packet to send over UART serial in concert with the PPS for the lidars to use for synchronisation.
+3. Spoofs a PPS and sends an NMEA string to the LiDAR for synchronization
 
-The Teensy is time synchronised via rosserial and therefore rosserial needs to be running on the host computer for this method to properly synchronise with the PC. It does this by waiting in the setup function until a connection with rosserial is gained, at which point, it will continue into the main loop.
+The Teensy waits in the setup function until a connection with rosserial is gained, at which point, it will continue into the main loop where it publishes the timestamps.
 
 ## Notes
 
