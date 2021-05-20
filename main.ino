@@ -139,12 +139,7 @@ void loop() {
   }
   if ((F1_closed && F1publishing) == true) {
     cam_msg.seq = F1sequence;
-<<<<<<< HEAD:main.ino
-    cam_msg.stamp = ros::Time(F1_close_s, 1000 * F1_close_us);
-    Serial.print(F1_close_s);
-=======
     cam_msg.stamp = ros::Time(F1_close_s, F1_close_us * 10 ^ 3);
->>>>>>> 4d7b82a6252b07855da0daa135c6a21ca11b9959:main.ino/main.ino.ino
     cam_msg.frame_id = "F1";
     F1_time.publish(&cam_msg);
     F1sequence++;
@@ -153,11 +148,7 @@ void loop() {
   //  if (F2_closed == true) {
   if ((F2_closed && F2publishing) == true) {
     cam_msg.seq = F2sequence;
-<<<<<<< HEAD:main.ino
-    cam_msg.stamp = ros::Time(F2_close_s, 1000 * F2_close_us);
-=======
     cam_msg.stamp = ros::Time(F2_close_s, F2_close_us * 10 ^ 3);
->>>>>>> 4d7b82a6252b07855da0daa135c6a21ca11b9959:main.ino/main.ino.ino
     cam_msg.frame_id = "F2";
     F2_time.publish(&cam_msg);
     F2sequence++;
@@ -166,11 +157,7 @@ void loop() {
   //  if (F3_closed == true) {
   if ((F3_closed && F3publishing) == true) {
     cam_msg.seq = F3sequence;
-<<<<<<< HEAD:main.ino
-    cam_msg.stamp = ros::Time(F3_close_s, 1000 * F3_close_us);
-=======
     cam_msg.stamp = ros::Time(F3_close_s, F3_close_us * 10 ^ 3);
->>>>>>> 4d7b82a6252b07855da0daa135c6a21ca11b9959:main.ino/main.ino.ino
     cam_msg.frame_id = "F3";
     F3_time.publish(&cam_msg);
     F3sequence++;
@@ -179,11 +166,7 @@ void loop() {
   //  if (IMU_sampled == true) {
   if ((IMU_sampled && IMUpublishing) == true) {
     cam_msg.seq = IMUsequence;
-<<<<<<< HEAD:main.ino
-    cam_msg.stamp = ros::Time(IMU_sample_s, 1000 * IMU_sample_us);
-=======
     cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us * 10 ^ 3);
->>>>>>> 4d7b82a6252b07855da0daa135c6a21ca11b9959:main.ino/main.ino.ino
     cam_msg.frame_id = "imu";
     IMU_time.publish(&cam_msg);
     IMUsequence++;
@@ -268,11 +251,8 @@ String checksum(String msg) {
 
 void enableTriggers(bool onOff) {
   if (onOff) {
-<<<<<<< HEAD:main.ino
-=======
     while (micros() % 1000000) {
     }
->>>>>>> 4d7b82a6252b07855da0daa135c6a21ca11b9959:main.ino/main.ino.ino
     FrequencyTimer2::enable();
   } else {
     FrequencyTimer2::disable();
