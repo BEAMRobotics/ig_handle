@@ -22,7 +22,7 @@ add_action_files(
 )
 
 generate_messages(
-  DEPENDENCIES actionlib_msgs sensor_msgs
+  DEPENDENCIES actionlib_msgs sensor_msgs std_msgs
 )
 
 catkin_package(
@@ -69,6 +69,15 @@ add_dependencies(arduino_sync_server
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS} 
 )
+
+add_executable(timestring src/timestring.cpp)
+target_include_directories(timestring
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
+)
+target_link_libraries(timestring ${catkin_LIBRARIES})
+
 
 ## Install ##
 install(TARGETS 

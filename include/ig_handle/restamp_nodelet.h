@@ -8,16 +8,15 @@
 
 namespace ig_handle {
 
-template <typename T>
-class restamp_nodelet : public nodelet::Nodelet {
- public:
+template <typename T> class restamp_nodelet : public nodelet::Nodelet {
+public:
   restamp_nodelet() = default;
 
- private:
+private:
   virtual void onInit();
 
-  void dataCb(const typename T::ConstPtr& msg);
-  void timeCb(const std_msgs::Header::ConstPtr& msg);
+  void dataCb(const typename T::ConstPtr &msg);
+  void timeCb(const std_msgs::Header::ConstPtr &msg);
 
   bool synchronizeAndPublish();
 
@@ -37,6 +36,6 @@ class restamp_nodelet : public nodelet::Nodelet {
   ros::Subscriber time_sub_;
   ros::Publisher pub_;
 };
-}  // namespace ig_handle
+} // namespace ig_handle
 
 #include "ig_handle/impl/restamp_nodelet.hpp"

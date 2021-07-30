@@ -1,12 +1,12 @@
 <launch>
-  <node name="xsens_mti_node" pkg="xsens_mti_ros" type="xsens_mti_node" output="screen">
-    <rosparam command="load" file="$(find xsens_mti_ros)/param/xsens_mti_node.yaml" />
+  <node  name="xsens_mti_node" pkg="xsens_mti_driver" type="xsens_mti_node" output="screen">
+      <rosparam command="load" file="$(find xsens_mti_driver)/param/xsens_mti_node.yaml" />
   </node>
   <node pkg="nodelet" type="nodelet" name="imu_nodelet_manager" args="manager" cwd="node" output="screen"/>
-  <node pkg="nodelet" type="nodelet" name="imu_restamp_nodelet"
+  <!-- <node pkg="nodelet" type="nodelet" name="imu_restamp_nodelet"
         args="load ig_handle/imu_restamp_nodelet imu_nodelet_manager" >
     <param name="max_buffer_size" value="1000"/>
     <param name="data_topic" value="/imu/data"/>
     <param name="time_topic" value="/imu/imu_time"/>
-  </node>
+  </node> -->
 </launch>
