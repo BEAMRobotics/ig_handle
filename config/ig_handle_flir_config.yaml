@@ -1,7 +1,7 @@
 enable_trigger: 'On'
 exposure_mode: 'Timed'
 exposure_auto: 'Continuous'
-# set higher until frame rate drops
+# increase until frame rate drops
 auto_exposure_time_upper_limit: 24000
 gamma_enable: false
 line_mode: 'Output'

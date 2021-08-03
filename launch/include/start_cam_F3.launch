@@ -38,7 +38,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     <node pkg="nodelet" type="nodelet" name="spinnaker_camera_nodelet"
           args="load spinnaker_camera_driver/SpinnakerCameraNodelet $(arg camera_name)_nodelet_manager" >
 
-      <param name="frame_id"                        value="camera" />
+      <param name="frame_id"                        value="$(arg camera_name)_link" />
       <param name="serial"                          value="$(arg camera_serial)" />
 
       <!-- triggering options provided in config/ -->
@@ -48,15 +48,6 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <param name="camera_info_url" if="$(arg calibrated)"
              value="file://$(env HOME)/.ros/camera_info/$(arg camera_serial).yaml" />
     </node>
-
-    <!-- Restamping nodelet -->
-    <node pkg="nodelet" type="nodelet" name="camera_restamp_nodelet"
-      args="load ig_handle/camera_restamp_nodelet $(arg camera_name)_nodelet_manager" >
-      <param name="max_buffer_size" value="50"/>
-      <param name="data_topic" value="/$(arg camera_name)/image_raw"/>
-      <param name="time_topic" value="/$(arg camera_name)/cam_time"/>
-    </node>
-
 
     <!-- Debayering nodelet -->
     <node pkg="nodelet" type="nodelet" name="image_proc_debayer"
