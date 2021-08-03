@@ -27,7 +27,7 @@ Use restamp_data.launch to restamp data topics with time stamp topic headers.
 
 ```
 
-roslaunch ig_handle restamp_stamped.launch
+roslaunch ig_handle restamp_data.launch
 
 ```
 
