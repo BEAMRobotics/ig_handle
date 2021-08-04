@@ -139,7 +139,7 @@ void loop() {
   }
   if ((F1_closed && F1publishing) == true) {
     cam_msg.seq = F1sequence;
-    cam_msg.stamp = ros::Time(F1_close_s, F1_close_us * 10 ^ 3);
+    cam_msg.stamp = ros::Time(F1_close_s, (F1_close_us%1000000) * 1000);
     cam_msg.frame_id = "F1";
     F1_time.publish(&cam_msg);
     F1sequence++;
@@ -148,7 +148,7 @@ void loop() {
   //  if (F2_closed == true) {
   if ((F2_closed && F2publishing) == true) {
     cam_msg.seq = F2sequence;
-    cam_msg.stamp = ros::Time(F2_close_s, F2_close_us * 10 ^ 3);
+    cam_msg.stamp = ros::Time(F2_close_s, (F2_close_us%1000000) * 1000);
     cam_msg.frame_id = "F2";
     F2_time.publish(&cam_msg);
     F2sequence++;
@@ -157,7 +157,7 @@ void loop() {
   //  if (F3_closed == true) {
   if ((F3_closed && F3publishing) == true) {
     cam_msg.seq = F3sequence;
-    cam_msg.stamp = ros::Time(F3_close_s, F3_close_us * 10 ^ 3);
+    cam_msg.stamp = ros::Time(F3_close_s, (F3_close_us%1000000) * 1000);
     cam_msg.frame_id = "F3";
     F3_time.publish(&cam_msg);
     F3sequence++;
@@ -166,7 +166,7 @@ void loop() {
   //  if (IMU_sampled == true) {
   if ((IMU_sampled && IMUpublishing) == true) {
     cam_msg.seq = IMUsequence;
-    cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us * 10 ^ 3);
+    cam_msg.stamp = ros::Time(IMU_sample_s, (IMU_sample_us%1000000) * 1000);
     cam_msg.frame_id = "imu";
     IMU_time.publish(&cam_msg);
     IMUsequence++;
@@ -215,22 +215,26 @@ void setSendNMEA_ISR(void) {
 // Timestamp creation interrupts
 void cam1_ISR(void) {
   F1_close_s = now();
-  F1_close_us = microsSincePPS;
+  // F1_close_us = microsSincePPS;
+  F1_close_us = micros(); // testing use this as a way of dealing with wraparound errors
   F1_closed = true;
 }
 void cam2_ISR(void) {
   F2_close_s = now();
-  F2_close_us = microsSincePPS;
+  // F2_close_us = microsSincePPS;
+  F2_close_us = micros();
   F2_closed = true;
 }
 void cam3_ISR(void) {
   F3_close_s = now();
-  F3_close_us = microsSincePPS;
+  // F3_close_us = microsSincePPS;
+  F3_close_us = micros();
   F3_closed = true;
 }
 void IMU_ISR(void) {
   IMU_sample_s = now();
-  IMU_sample_us = microsSincePPS;
+  // IMU_sample_us = microsSincePPS;
+  IMU_sample_us = micros();
   IMU_sampled = true;
 }
 
