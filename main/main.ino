@@ -2,10 +2,8 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/Header.h>
 #include <std_srvs/SetBool.h>
-//#include <sensor_msgs/Imu.h>
 #include <FrequencyTimer2.h>
 #include <TimeLib.h>
-//#include "Trigger.h"
 
 #define GPSERIAL Serial1
 #define PPS_PIN 6
@@ -32,7 +30,7 @@ bool arduino_pps, F1publishing = true, F2publishing = true, F3publishing = true,
 uint32_t F1sequence = 0, F2sequence = 0, F3sequence = 0, IMUsequence = 0;
 volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
               F3_closed = false, IMU_sampled = false;
-elapsedMicros microsSincePPS;
+//elapsedMicros microsSincePPS;
 volatile uint32_t F1_close_s, F1_close_us, F2_close_s, F2_close_us, F3_close_s,
     F3_close_us, IMU_sample_s, IMU_sample_us;
 
@@ -71,8 +69,7 @@ void setup() {
   pinMode(PPS_PIN,
           OUTPUT);  // pin 5 is still driven by default but has a 50% duty cycle
   FrequencyTimer2::setPeriod(1000000);  // 10^6 microseconds, 1 second
-  FrequencyTimer2::setOnOverflow(
-      setSendNMEA_ISR);  // sets the function that runs when the timer overflows
+  FrequencyTimer2::setOnOverflow(setSendNMEA_ISR);  // sets the function that runs when the timer overflows
 
   /* set up the camera triggers but don't start them yet either */
   analogWriteFrequency(CAM1_OUT,
@@ -104,14 +101,12 @@ void setup() {
     nh.spinOnce();
   }
 
-  setTime(nh.now());
-  setSyncProvider(nh.now);
-
   /* start all the timers */
   enableTriggers(true);
 
   Serial.begin(57600);
 }
+
 
 /*
  * Continously looping function performs the following:
@@ -121,8 +116,9 @@ void setup() {
  */
 void loop() {
   if (sendNMEA == true) {
+  
     char time_now[7], date_now[7];
-    time_t t = now();
+    time_t t = nh.now().sec;
     sprintf(time_now, "%02i%02i%02i", hour(t), minute(t), second(t));
     sprintf(date_now, "%02i%02i%02i", day(t), month(t), year(t) % 100);
     String nmea_string = F("GPRMC,") + String(time_now) +
@@ -139,7 +135,7 @@ void loop() {
   }
   if ((F1_closed && F1publishing) == true) {
     cam_msg.seq = F1sequence;
-    cam_msg.stamp = ros::Time(F1_close_s, (F1_close_us%1000000) * 1000);
+    cam_msg.stamp = ros::Time(F1_close_s, F1_close_us);
     cam_msg.frame_id = "F1";
     F1_time.publish(&cam_msg);
     F1sequence++;
@@ -148,7 +144,7 @@ void loop() {
   //  if (F2_closed == true) {
   if ((F2_closed && F2publishing) == true) {
     cam_msg.seq = F2sequence;
-    cam_msg.stamp = ros::Time(F2_close_s, (F2_close_us%1000000) * 1000);
+    cam_msg.stamp = ros::Time(F2_close_s, F2_close_us);
     cam_msg.frame_id = "F2";
     F2_time.publish(&cam_msg);
     F2sequence++;
@@ -157,7 +153,7 @@ void loop() {
   //  if (F3_closed == true) {
   if ((F3_closed && F3publishing) == true) {
     cam_msg.seq = F3sequence;
-    cam_msg.stamp = ros::Time(F3_close_s, (F3_close_us%1000000) * 1000);
+    cam_msg.stamp = ros::Time(F3_close_s, F3_close_us);
     cam_msg.frame_id = "F3";
     F3_time.publish(&cam_msg);
     F3sequence++;
@@ -166,7 +162,7 @@ void loop() {
   //  if (IMU_sampled == true) {
   if ((IMU_sampled && IMUpublishing) == true) {
     cam_msg.seq = IMUsequence;
-    cam_msg.stamp = ros::Time(IMU_sample_s, (IMU_sample_us%1000000) * 1000);
+    cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us);
     cam_msg.frame_id = "imu";
     IMU_time.publish(&cam_msg);
     IMUsequence++;
@@ -209,32 +205,32 @@ void setSendNMEA_ISR(void) {
    */
   digitalWriteFast(PPS_PIN, HIGH);
   sendNMEA = true;
-  microsSincePPS = 0;
+//  microsSincePPS = 0;
 }
 
 // Timestamp creation interrupts
 void cam1_ISR(void) {
-  F1_close_s = now();
+  F1_close_s = nh.now().sec;
+  F1_close_us = nh.now().nsec; // testing use this as a way of dealing with wraparound errors
   // F1_close_us = microsSincePPS;
-  F1_close_us = micros(); // testing use this as a way of dealing with wraparound errors
   F1_closed = true;
 }
 void cam2_ISR(void) {
-  F2_close_s = now();
+  F2_close_s = nh.now().sec;
+  F2_close_us = nh.now().nsec;
   // F2_close_us = microsSincePPS;
-  F2_close_us = micros();
   F2_closed = true;
 }
 void cam3_ISR(void) {
-  F3_close_s = now();
+  F3_close_s = nh.now().sec;
+  F3_close_us = nh.now().nsec;
   // F3_close_us = microsSincePPS;
-  F3_close_us = micros();
   F3_closed = true;
 }
 void IMU_ISR(void) {
-  IMU_sample_s = now();
+  IMU_sample_s = nh.now().sec;
+  IMU_sample_us = nh.now().nsec;
   // IMU_sample_us = microsSincePPS;
-  IMU_sample_us = micros();
   IMU_sampled = true;
 }
 
