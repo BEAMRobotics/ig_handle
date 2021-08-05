@@ -13,31 +13,72 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-$Comp
-L teensy:Teensy3.6 U?
-U 1 1 5FFCE603
-P 3700 3300
-F 0 "U?" H 3700 5737 60  0000 C CNN
-F 1 "Teensy3.6" H 3700 5631 60  0000 C CNN
-F 2 "" H 3700 3350 60  0000 C CNN
-F 3 "" H 3700 3350 60  0000 C CNN
-	1    3700 3300
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
-	2550 1850 2350 1850
-Text GLabel 2350 1850 0    50   Output ~ 0
+	4350 2400 4150 2400
+Text GLabel 4150 2400 0    50   Output ~ 0
 PPS
-Text Notes 550  2200 0    50   ~ 0
+Text Notes 2100 2700 0    50   ~ 0
 FrequencyTimer2 uses pin 5\nand can output a very low jitter \nsignal based on the PWM Timer.\nUnfortunately it’s 50% duty cycle\nand we need a shorter pulse so \nwe’re using pin 6
-Text GLabel 2350 1350 0    50   Output ~ 0
+Text GLabel 4150 1900 0    50   Output ~ 0
 $GPRMC
 Wire Wire Line
-	2350 1350 2550 1350
-Text Notes 650  1650 0    50   ~ 0
+	4150 1900 4350 1900
+Text Notes 2100 1850 0    50   ~ 0
 Pins 2, 7, 8, 14 (there are\nsome more) are on PWM\nTimer 3 (FTM3) so changes\nto their timer affect both pins
+Wire Wire Line
+	4150 2000 4350 2000
+Text GLabel 4150 2000 0    50   Output ~ 0
+Cam1_Trig
+Text GLabel 4150 2300 0    50   Output ~ 0
+1Hz_clk
+Wire Wire Line
+	4150 2300 4350 2300
+Text GLabel 4200 2500 0    50   Output ~ 0
+Cam2_Trig
+Text GLabel 4200 2600 0    50   Output ~ 0
+Cam3_Trig
+Wire Wire Line
+	4200 2500 4350 2500
+Wire Wire Line
+	4350 2600 4200 2600
+Text GLabel 4200 2700 0    50   Input ~ 0
+Cam1_Exp
+Wire Wire Line
+	4200 2700 4350 2700
+Text GLabel 4200 2800 0    50   Input ~ 0
+Cam2_Exp
+Text GLabel 4200 2900 0    50   Input ~ 0
+Cam3_Exp
+Wire Wire Line
+	4200 2900 4350 2900
+Wire Wire Line
+	4200 2800 4350 2800
+Text GLabel 4200 3000 0    50   Input ~ 0
+IMU_SyncOut
+Wire Wire Line
+	4350 3000 4200 3000
+Wire Wire Line
+	6650 4400 6800 4400
+Wire Wire Line
+	6800 4300 6650 4300
+Entry Wire Line
+	6800 4400 6900 4500
+Entry Wire Line
+	6800 4300 6900 4400
+Entry Wire Line
+	6800 4200 6900 4300
+Entry Wire Line
+	6800 4500 6900 4600
+Wire Wire Line
+	6800 4500 6650 4500
+Wire Wire Line
+	6800 4200 6650 4200
+Text GLabel 7000 4750 2    50   BiDi ~ 0
+Teensy-PC-USB
+Wire Bus Line
+	6900 4750 7000 4750
 $Bitmap
-Pos 9800 1350
+Pos 8550 2350
 Scale 0.600000
 Data
 89 50 4E 47 0D 0A 1A 0A 00 00 00 0D 49 48 44 52 00 00 04 FE 00 00 02 64 08 02 00 00 00 0E 4F 78 
@@ -7055,58 +7096,33 @@ C3 3C 73 D8 F4 65 18 86 61 18 86 61 18 86 61 9E 39 6C FA 32 0C C3 30 0C C3 30 0C
 18 86 79 E6 FC 7F FF 33 04 E6 FF 8E 62 18 00 00 00 00 49 45 4E 44 AE 42 60 82 
 EndData
 $EndBitmap
+$Comp
+L teensy:Teensy3.6 U1
+U 1 1 5FFCE603
+P 5500 3850
+F 0 "U1" H 5500 6287 60  0000 C CNN
+F 1 "Teensy3.6" H 5500 6181 60  0000 C CNN
+F 2 "" H 5500 3900 60  0000 C CNN
+F 3 "" H 5500 3900 60  0000 C CNN
+	1    5500 3850
+	1    0    0    -1  
+$EndComp
+Text GLabel 4150 2100 0    50   Output ~ 0
+Cam4_Trig
+Wire Wire Line
+	4150 2100 4350 2100
+Text GLabel 4200 3200 0    50   Input ~ 0
+Cam4_Exp
+Wire Wire Line
+	4200 3200 4350 3200
+Text Notes 2100 2100 0    50   ~ 0
+Pins 3 and 4 use PWM Timer FTM1 so\nchanges to that timer affect both pins.
 Wire Bus Line
-	5100 4200 5200 4200
-Text GLabel 5200 4200 2    50   BiDi ~ 0
-Teensy-PC-USB
-Wire Wire Line
-	5000 3650 4850 3650
-Wire Wire Line
-	5000 3950 4850 3950
-Entry Wire Line
-	5000 3950 5100 4050
-Entry Wire Line
-	5000 3650 5100 3750
-Entry Wire Line
-	5000 3750 5100 3850
-Entry Wire Line
-	5000 3850 5100 3950
-Wire Wire Line
-	5000 3750 4850 3750
-Wire Wire Line
-	4850 3850 5000 3850
-Wire Wire Line
-	2350 1450 2550 1450
-Text GLabel 2350 1450 0    50   Output ~ 0
-Cam0_Trig
-Text GLabel 2350 1750 0    50   Output ~ 0
-1Hz_clk
-Wire Wire Line
-	2350 1750 2550 1750
-Text GLabel 2400 1950 0    50   Output ~ 0
-Cam1_Trig
-Text GLabel 2400 2050 0    50   Output ~ 0
-Cam2_Trig
-Wire Wire Line
-	2400 1950 2550 1950
-Wire Wire Line
-	2550 2050 2400 2050
-Text GLabel 2400 2150 0    50   Input ~ 0
-Cam0_Exp
-Wire Wire Line
-	2400 2150 2550 2150
-Text GLabel 2400 2250 0    50   Input ~ 0
-Cam1_Exp
-Text GLabel 2400 2350 0    50   Input ~ 0
-Cam2_Exp
-Wire Wire Line
-	2400 2350 2550 2350
-Wire Wire Line
-	2400 2250 2550 2250
-Text GLabel 2400 2450 0    50   Input ~ 0
-IMU_SyncOut
-Wire Wire Line
-	2550 2450 2400 2450
-Wire Bus Line
-	5100 3750 5100 4200
+	6900 4300 6900 4750
+Text Notes 8150 7650 0    59   ~ 0
+5-Aug-21
+Text Notes 10550 7650 0    59   ~ 0
+B
+Text Notes 7400 7500 0    59   ~ 0
+Handle Pinout
 $EndSCHEMATC
