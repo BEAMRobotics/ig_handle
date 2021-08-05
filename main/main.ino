@@ -11,9 +11,11 @@
 #define CAM1_OUT 2
 #define CAM2_OUT 7
 #define CAM3_OUT 8
+#define CAM4_OUT 3
 #define CAM1_IN 9
 #define CAM2_IN 10
 #define CAM3_IN 11
+#define CAM4_IN 24
 
 using std_srvs::SetBool;
 
@@ -24,24 +26,28 @@ std_msgs::Header cam_msg;
 ros::Publisher F1_time("/F1/cam_time", &cam_msg);
 ros::Publisher F2_time("/F2/cam_time", &cam_msg);
 ros::Publisher F3_time("/F3/cam_time", &cam_msg);
+ros::Publisher F4_time("/F4/cam_time", &cam_msg);
 ros::Publisher IMU_time("/imu/imu_time", &cam_msg);
 bool arduino_pps, F1publishing = true, F2publishing = true, F3publishing = true,
                   IMUpublishing = true;
-uint32_t F1sequence = 0, F2sequence = 0, F3sequence = 0, IMUsequence = 0;
+uint32_t F1sequence = 0, F2sequence = 0, F3sequence = 0, F4sequence = 0,
+              IMUsequence = 0;
 volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
-              F3_closed = false, IMU_sampled = false;
+              F3_closed = false, F4_closed = false, IMU_sampled = false;
 //elapsedMicros microsSincePPS;
 volatile uint32_t F1_close_s, F1_close_us, F2_close_s, F2_close_us, F3_close_s,
-    F3_close_us, IMU_sample_s, IMU_sample_us;
+    F3_close_us, F4_close_s, F4_close_us, IMU_sample_s, IMU_sample_us;
 
 ///* Forward function declarations */
 void F1Callback(const std_msgs::Bool &msg);
 void F2Callback(const std_msgs::Bool &msg);
 void F3Callback(const std_msgs::Bool &msg);
+void F4Callback(const std_msgs::Bool &msg);
 void IMUCallback(const std_msgs::Bool &msg);
 void cam1_ISR(void);
 void cam2_ISR(void);
 void cam3_ISR(void);
+void cam4_ISR(void);
 void IMU_ISR(void);
 void setSendNMEA(void);
 void enableTriggers(bool onOff);
@@ -50,6 +56,7 @@ String checksum(String msg);
 ros::Subscriber<std_msgs::Bool> toggleF1("/F1/toggle", F1Callback);
 ros::Subscriber<std_msgs::Bool> toggleF2("/F2/toggle", F2Callback);
 ros::Subscriber<std_msgs::Bool> toggleF3("/F3/toggle", F3Callback);
+ros::Subscriber<std_msgs::Bool> toggleF3("/F4/toggle", F4Callback);
 ros::Subscriber<std_msgs::Bool> toggleIMU("/imu/toggle", IMUCallback);
 // ros::ServiceServer<SetBool::Request, SetBool::Response> server("arduino_pps",
 // &ppsCallback);
@@ -78,11 +85,13 @@ void setup() {
       CAM2_OUT,
       20.0);  // We're using a PWM signal because it's a way of offloading
   analogWriteFrequency(CAM3_OUT, 20.0);  // the task to free up the main loop
+  analogWriteFrequency(CAM4_OUT, 20.0);
 
   /* configure input pins */
   pinMode(CAM1_IN, INPUT_PULLUP);
   pinMode(CAM2_IN, INPUT_PULLUP);
   pinMode(CAM3_IN, INPUT_PULLUP);
+  pinMode(CAM4_IN, INPUT_PULLUP);
   pinMode(IMU_IN, INPUT);
 
   // node initialization
@@ -90,11 +99,13 @@ void setup() {
   nh.advertise(F1_time);
   nh.advertise(F2_time);
   nh.advertise(F3_time);
+  nh.advertise(F4_time);
   nh.advertise(IMU_time);
   ////  nh.advertiseService(server);
   nh.subscribe(toggleF1);
   nh.subscribe(toggleF2);
   nh.subscribe(toggleF3);
+  nh.subscribe(toggleF4);
   nh.subscribe(toggleIMU);
 
   while (!nh.connected()) {
@@ -141,7 +152,6 @@ void loop() {
     F1sequence++;
     F1_closed = false;
   }
-  //  if (F2_closed == true) {
   if ((F2_closed && F2publishing) == true) {
     cam_msg.seq = F2sequence;
     cam_msg.stamp = ros::Time(F2_close_s, F2_close_us);
@@ -150,7 +160,6 @@ void loop() {
     F2sequence++;
     F2_closed = false;
   }
-  //  if (F3_closed == true) {
   if ((F3_closed && F3publishing) == true) {
     cam_msg.seq = F3sequence;
     cam_msg.stamp = ros::Time(F3_close_s, F3_close_us);
@@ -159,7 +168,14 @@ void loop() {
     F3sequence++;
     F3_closed = false;
   }
-  //  if (IMU_sampled == true) {
+  if ((F4_closed && F4publishing) == true) {
+    cam_msg.seq = F4sequence;
+    cam_msg.stamp = ros::Time(F4_close_s, F4_close_us);
+    cam_msg.frame_id = "F4";
+    F4_time.publish(&cam_msg);
+    F4sequence++;
+    F4_closed = false;
+  }
   if ((IMU_sampled && IMUpublishing) == true) {
     cam_msg.seq = IMUsequence;
     cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us);
@@ -189,6 +205,7 @@ void loop() {
 void F1Callback(const std_msgs::Bool &msg) { F1publishing = msg.data; }
 void F2Callback(const std_msgs::Bool &msg) { F2publishing = msg.data; }
 void F3Callback(const std_msgs::Bool &msg) { F3publishing = msg.data; }
+void F4Callback(const std_msgs::Bool &msg) { F4publishing = msg.data; }
 void IMUCallback(const std_msgs::Bool &msg) { IMUpublishing = msg.data; }
 /* PPS callback for toggling whether to trigger PPS and NMEA */
 void ppsCallback(const SetBool::Request &req, SetBool::Response &res) {
@@ -227,6 +244,12 @@ void cam3_ISR(void) {
   // F3_close_us = microsSincePPS;
   F3_closed = true;
 }
+void cam4_ISR(void) {
+  F4_close_s = nh.now().sec;
+  F4_close_us = nh.now().nsec;
+  // F4_close_us = microsSincePPS;
+  F4_closed = true;
+}
 void IMU_ISR(void) {
   IMU_sample_s = nh.now().sec;
   IMU_sample_us = nh.now().nsec;
@@ -260,9 +283,11 @@ void enableTriggers(bool onOff) {
   analogWrite(CAM1_OUT, 5 * onOff);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
   analogWrite(CAM2_OUT, 5 * onOff);
   analogWrite(CAM3_OUT, 5 * onOff);
+  analogWrite(CAM4_OUT, 5 * onOff);
   F1publishing = true;
   F2publishing = true;
   F3publishing = true;
+  F4publishing = true;
   IMUpublishing = true;
 
   /* enable interrupts */
@@ -270,5 +295,6 @@ void enableTriggers(bool onOff) {
                   RISING);  // Falling or rising TBD
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
 }
