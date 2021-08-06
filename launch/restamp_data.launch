@@ -1,5 +1,5 @@
 <launch>
-  <node name="ig_handle_collect_bag" pkg="ig_handle" type="record_stamped.sh" output="screen" args="/home/gabe/bags" />
+  <node name="ig_handle_collect_bag" pkg="ig_handle" type="record_stamped.sh" output="screen" args="~/bags" />
 
   <arg name="camera_1" default="F1" />
   <group ns="$(arg camera_1)">
