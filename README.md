@@ -19,16 +19,3 @@ roslaunch ig_handle collect_raw_data.launch
 ```
 
 This launch file will start the handle and record a bag file.
-
-### Restamp datas
-
-Use restamp_data.launch to restamp data topics with time stamp topic headers. 
-
-
-```
-
-roslaunch ig_handle restamp_data.launch
-
-```
-
-Once the restamp nodelets have started, play back a raw data bag.  It is safe to use -r to speed up the playback.
