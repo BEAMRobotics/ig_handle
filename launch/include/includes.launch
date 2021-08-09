@@ -4,7 +4,7 @@
 
   <!-- Start lidar -->
   <include file="$(find ig_handle)/launch/include/start_lidar_h.launch"/>
-  <include file="$(find ig_handle)/launch/include/start_lidar_v.launch"/>
+  <!-- <include file="$(find ig_handle)/launch/include/start_lidar_v.launch"/> -->
 
   <!-- Start cameras -->
   <include file="$(find ig_handle)/launch/include/start_cam_F1.launch" />
