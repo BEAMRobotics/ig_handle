@@ -18,4 +18,10 @@ roslaunch ig_handle collect_raw_data.launch
 
 ```
 
-This launch file will start the handle and record a bag file.
+This launch file will start the handle and record a bag file.  Bags will be recorded in a timestamped folder as "raw.bag".  Use "output" arg to specify the parent directory for the timestamped folder (default is ~/bags).  For example:
+
+```
+roslaunch ig_handle collect_raw_data.launch output:=~/my_folder
+```
+
+This command will record data to "~/my_folder/2021-Aug-09-07-01pm/raw.bag".
