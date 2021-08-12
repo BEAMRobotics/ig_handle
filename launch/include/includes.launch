@@ -14,11 +14,4 @@
   <!-- Start IMU -->
   <include file="$(find ig_handle)/launch/include/start_imu.launch" />
 
-
-  <!-- Run System Monitor -->
-  <!-- <include file="$(find ig_handle)/launch/include/system_monitor.launch" /> -->
-
-  <!-- Run rviz -->
-  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ig_handle)/config/rviz_config.rviz" /> -->
-
 </launch>
