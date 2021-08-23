@@ -85,6 +85,7 @@ void setup() {
   analogWriteFrequency(CAM4_OUT, 20.0);
   /* setup IMU_START ping as output */
   pinMode(IMU_START, OUTPUT);
+  digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
 
 //  await nodehandle time sync
   while (nh.now().sec < 100000) {
@@ -94,7 +95,7 @@ void setup() {
   /* start sampling */
   nh.loginfo("Setup complete, enabling triggers");
   enableTriggers();
-  Serial.begin(57600);
+  // Serial.begin(57600); // This takes some time so commenting it out should speed up the startup
 }
 
 
@@ -205,8 +206,9 @@ String checksum(String msg) {
 
 void enableTriggers() {
   /* await even second */
-  while (micros() % 1000000) {
-  }
+  // By switching to nh.now() we shouldn't need this wait
+  // while (!(micros() % 1000000) {
+  // }
   FrequencyTimer2::enable();
 
   /* start sampling */
