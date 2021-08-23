@@ -1,7 +1,5 @@
 #include <ros.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/Header.h>
-#include <std_srvs/SetBool.h>
+#include <sensor_msgs/TimeReference.h>
 #include <FrequencyTimer2.h>
 #include <TimeLib.h>
 
@@ -16,50 +14,30 @@
 #define CAM2_IN 10
 #define CAM3_IN 11
 #define CAM4_IN 24
-
-using std_srvs::SetBool;
+#define IMU_START 23
 
 /* ROS node handler */
 ros::NodeHandle nh;
 /* Trigger variables for camera */
-std_msgs::Header cam_msg;
-ros::Publisher F1_time("/F1/cam_time", &cam_msg);
-ros::Publisher F2_time("/F2/cam_time", &cam_msg);
-ros::Publisher F3_time("/F3/cam_time", &cam_msg);
-ros::Publisher F4_time("/F4/cam_time", &cam_msg);
-ros::Publisher IMU_time("/imu/imu_time", &cam_msg);
-bool arduino_pps, F1publishing = true, F2publishing = true, F3publishing = true,
-                  IMUpublishing = true;
-uint32_t F1sequence = 0, F2sequence = 0, F3sequence = 0, F4sequence = 0,
-              IMUsequence = 0;
+sensor_msgs::TimeReference time_msg;
+ros::Publisher F1_time("/F1/cam_time", &time_msg);
+ros::Publisher F2_time("/F2/cam_time", &time_msg);
+ros::Publisher F3_time("/F3/cam_time", &time_msg);
+ros::Publisher F4_time("/F4/cam_time", &time_msg);
+ros::Publisher IMU_time("/imu/imu_time", &time_msg);
 volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
               F3_closed = false, F4_closed = false, IMU_sampled = false;
-//elapsedMicros microsSincePPS;
-volatile uint32_t F1_close_s, F1_close_us, F2_close_s, F2_close_us, F3_close_s,
-    F3_close_us, F4_close_s, F4_close_us, IMU_sample_s, IMU_sample_us;
+ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp, IMU_stamp;
 
 ///* Forward function declarations */
-void F1Callback(const std_msgs::Bool &msg);
-void F2Callback(const std_msgs::Bool &msg);
-void F3Callback(const std_msgs::Bool &msg);
-void F4Callback(const std_msgs::Bool &msg);
-void IMUCallback(const std_msgs::Bool &msg);
 void cam1_ISR(void);
 void cam2_ISR(void);
 void cam3_ISR(void);
 void cam4_ISR(void);
 void IMU_ISR(void);
 void setSendNMEA(void);
-void enableTriggers(bool onOff);
-void ppsCallback(const SetBool::Request &req, SetBool::Response &res);
+void enableTriggers();
 String checksum(String msg);
-ros::Subscriber<std_msgs::Bool> toggleF1("/F1/toggle", F1Callback);
-ros::Subscriber<std_msgs::Bool> toggleF2("/F2/toggle", F2Callback);
-ros::Subscriber<std_msgs::Bool> toggleF3("/F3/toggle", F3Callback);
-ros::Subscriber<std_msgs::Bool> toggleF3("/F4/toggle", F4Callback);
-ros::Subscriber<std_msgs::Bool> toggleIMU("/imu/toggle", IMUCallback);
-// ros::ServiceServer<SetBool::Request, SetBool::Response> server("arduino_pps",
-// &ppsCallback);
 
 /*
  * Initial setup for the arduino sketch
@@ -69,31 +47,14 @@ ros::Subscriber<std_msgs::Bool> toggleIMU("/imu/toggle", IMUCallback);
  *  - UART Serial setup for NMEA strings
  *  - Holds until rosserial is connected
  */
-void setup() {
+void setup() {  
   /* Setup outputs to LiDAR
    *    - PPS but don't start it yet
         - Attach */
-  pinMode(PPS_PIN,
-          OUTPUT);  // pin 5 is still driven by default but has a 50% duty cycle
+  pinMode(PPS_PIN, OUTPUT);  // pin 5 is still driven by default but has a 50% duty cycle
   FrequencyTimer2::setPeriod(1000000);  // 10^6 microseconds, 1 second
   FrequencyTimer2::setOnOverflow(setSendNMEA_ISR);  // sets the function that runs when the timer overflows
-
-  /* set up the camera triggers but don't start them yet either */
-  analogWriteFrequency(CAM1_OUT,
-                       20.0);  // 20.0 Hz base frequency for the PWM signal
-  analogWriteFrequency(
-      CAM2_OUT,
-      20.0);  // We're using a PWM signal because it's a way of offloading
-  analogWriteFrequency(CAM3_OUT, 20.0);  // the task to free up the main loop
-  analogWriteFrequency(CAM4_OUT, 20.0);
-
-  /* configure input pins */
-  pinMode(CAM1_IN, INPUT_PULLUP);
-  pinMode(CAM2_IN, INPUT_PULLUP);
-  pinMode(CAM3_IN, INPUT_PULLUP);
-  pinMode(CAM4_IN, INPUT_PULLUP);
-  pinMode(IMU_IN, INPUT);
-
+  
   // node initialization
   nh.initNode();
   nh.advertise(F1_time);
@@ -101,20 +62,38 @@ void setup() {
   nh.advertise(F3_time);
   nh.advertise(F4_time);
   nh.advertise(IMU_time);
-  ////  nh.advertiseService(server);
-  nh.subscribe(toggleF1);
-  nh.subscribe(toggleF2);
-  nh.subscribe(toggleF3);
-  nh.subscribe(toggleF4);
-  nh.subscribe(toggleIMU);
 
-  while (!nh.connected()) {
-    nh.spinOnce();
+
+ /* configure input pins */
+  pinMode(CAM1_IN, INPUT_PULLUP);
+  pinMode(CAM2_IN, INPUT_PULLUP);
+  pinMode(CAM3_IN, INPUT_PULLUP);
+  pinMode(CAM4_IN, INPUT_PULLUP);
+  pinMode(IMU_IN, INPUT);
+
+  /* enable interrupts */
+  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
+
+  /* set up the camera triggers but don't start them yet either */
+  analogWriteFrequency(CAM1_OUT, 20.0);  // 20.0 Hz base frequency for the PWM signal
+  analogWriteFrequency(CAM2_OUT, 20.0);  // We're using a PWM signal because it's a way of offloading
+  analogWriteFrequency(CAM3_OUT, 20.0);  // the task to free up the main loop
+  analogWriteFrequency(CAM4_OUT, 20.0);
+  /* setup IMU_START ping as output */
+  pinMode(IMU_START, OUTPUT);
+
+//  await nodehandle time sync
+  while (nh.now().sec < 100000) {
+    nh.spinOnce(); 
   }
-
-  /* start all the timers */
-  enableTriggers(true);
-
+  
+  /* start sampling */
+  nh.loginfo("Setup complete, enabling triggers");
+  enableTriggers();
   Serial.begin(57600);
 }
 
@@ -127,13 +106,12 @@ void setup() {
  */
 void loop() {
   if (sendNMEA == true) {
-  
     char time_now[7], date_now[7];
     time_t t = nh.now().sec;
     sprintf(time_now, "%02i%02i%02i", hour(t), minute(t), second(t));
     sprintf(date_now, "%02i%02i%02i", day(t), month(t), year(t) % 100);
     String nmea_string = F("GPRMC,") + String(time_now) +
-                         F(",A,4807.038,N,01131.000,E,022.4,084.4,") +
+                         F(",A,4365.107,N,79347.702,E,022.4,084.4,") +
                          String(date_now) + ",003.1,W";
     String chk = checksum(nmea_string);
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
@@ -141,79 +119,42 @@ void loop() {
     sendNMEA = false;
     digitalWriteFast(PPS_PIN,
                      LOW);  // minimum pulse duration required by LiDAR is 10 us
+                     
 
-    Serial.print(nmea_string);  // for debugging
+//    nh.loginfo(nmea_string.c_str()); //debug nmea string in rosconsole
   }
-  if ((F1_closed && F1publishing) == true) {
-    cam_msg.seq = F1sequence;
-    cam_msg.stamp = ros::Time(F1_close_s, F1_close_us);
-    cam_msg.frame_id = "F1";
-    F1_time.publish(&cam_msg);
-    F1sequence++;
+  if (F1_closed == true) {
     F1_closed = false;
+    time_msg.time_ref = F1_close_stamp;
+    F1_time.publish(&time_msg);
   }
-  if ((F2_closed && F2publishing) == true) {
-    cam_msg.seq = F2sequence;
-    cam_msg.stamp = ros::Time(F2_close_s, F2_close_us);
-    cam_msg.frame_id = "F2";
-    F2_time.publish(&cam_msg);
-    F2sequence++;
+  if (F2_closed == true) {
     F2_closed = false;
+    time_msg.time_ref = F2_close_stamp;
+    F2_time.publish(&time_msg);
   }
-  if ((F3_closed && F3publishing) == true) {
-    cam_msg.seq = F3sequence;
-    cam_msg.stamp = ros::Time(F3_close_s, F3_close_us);
-    cam_msg.frame_id = "F3";
-    F3_time.publish(&cam_msg);
-    F3sequence++;
+  if (F3_closed == true) {
     F3_closed = false;
+    time_msg.time_ref = F3_close_stamp;
+    F3_time.publish(&time_msg);
   }
-  if ((F4_closed && F4publishing) == true) {
-    cam_msg.seq = F4sequence;
-    cam_msg.stamp = ros::Time(F4_close_s, F4_close_us);
-    cam_msg.frame_id = "F4";
-    F4_time.publish(&cam_msg);
-    F4sequence++;
+  if (F4_closed == true) {
     F4_closed = false;
+    time_msg.time_ref = F4_close_stamp;
+    F4_time.publish(&time_msg);
   }
-  if ((IMU_sampled && IMUpublishing) == true) {
-    cam_msg.seq = IMUsequence;
-    cam_msg.stamp = ros::Time(IMU_sample_s, IMU_sample_us);
-    cam_msg.frame_id = "imu";
-    IMU_time.publish(&cam_msg);
-    IMUsequence++;
+  if (IMU_sampled == true) {
     IMU_sampled = false;
-  }
-
-  // If rosserial disconnects, stop publishing cam_time and imu0 and reset to 0
-  if (!nh.connected()) {
-    enableTriggers(false);
-    F1publishing = false, F2publishing = false, F3publishing = false,
-    IMUpublishing = false;
-    F1sequence = 0, F2sequence = 0, F3sequence = 0, IMUsequence = 0;
+    time_msg.time_ref = IMU_stamp;
+    IMU_time.publish(&time_msg);
   }
 
   nh.spinOnce();
-  /* Handle camera triggering and stamping here */
 }
 
 /***********************************************
  *            Helper functions                 *
  ***********************************************/
-
-/* Callbacks for /toggle to begin publishing */
-void F1Callback(const std_msgs::Bool &msg) { F1publishing = msg.data; }
-void F2Callback(const std_msgs::Bool &msg) { F2publishing = msg.data; }
-void F3Callback(const std_msgs::Bool &msg) { F3publishing = msg.data; }
-void F4Callback(const std_msgs::Bool &msg) { F4publishing = msg.data; }
-void IMUCallback(const std_msgs::Bool &msg) { IMUpublishing = msg.data; }
-/* PPS callback for toggling whether to trigger PPS and NMEA */
-void ppsCallback(const SetBool::Request &req, SetBool::Response &res) {
-  arduino_pps = req.data;
-  res.success = true;
-  res.message = "success";
-}
-
 void setSendNMEA_ISR(void) {
   /*  It's not really recommended to write to pins from an interrupt as it can
    * take a relatively long time to execute. However, one of the main purposes
@@ -227,37 +168,27 @@ void setSendNMEA_ISR(void) {
 
 // Timestamp creation interrupts
 void cam1_ISR(void) {
-  F1_close_s = nh.now().sec;
-  F1_close_us = nh.now().nsec; // testing use this as a way of dealing with wraparound errors
-  // F1_close_us = microsSincePPS;
+  F1_close_stamp = nh.now();
   F1_closed = true;
 }
 void cam2_ISR(void) {
-  F2_close_s = nh.now().sec;
-  F2_close_us = nh.now().nsec;
-  // F2_close_us = microsSincePPS;
+  F2_close_stamp = nh.now();
   F2_closed = true;
 }
 void cam3_ISR(void) {
-  F3_close_s = nh.now().sec;
-  F3_close_us = nh.now().nsec;
-  // F3_close_us = microsSincePPS;
+  F3_close_stamp = nh.now();
   F3_closed = true;
 }
 void cam4_ISR(void) {
-  F4_close_s = nh.now().sec;
-  F4_close_us = nh.now().nsec;
-  // F4_close_us = microsSincePPS;
+  F4_close_stamp = nh.now();
   F4_closed = true;
 }
 void IMU_ISR(void) {
-  IMU_sample_s = nh.now().sec;
-  IMU_sample_us = nh.now().nsec;
-  // IMU_sample_us = microsSincePPS;
+  IMU_stamp = nh.now();
   IMU_sampled = true;
 }
 
-/* COmputes XOR checksum of NMEA sentence */
+/* Computes XOR checksum of NMEA sentence */
 String checksum(String msg) {
   byte chksum = 0;
   int l = msg.length();
@@ -272,29 +203,16 @@ String checksum(String msg) {
   return result;
 }
 
-void enableTriggers(bool onOff) {
-  if (onOff) {
-    while (micros() % 1000000) {
-    }
-    FrequencyTimer2::enable();
-  } else {
-    FrequencyTimer2::disable();
+void enableTriggers() {
+  /* await even second */
+  while (micros() % 1000000) {
   }
-  analogWrite(CAM1_OUT, 5 * onOff);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
-  analogWrite(CAM2_OUT, 5 * onOff);
-  analogWrite(CAM3_OUT, 5 * onOff);
-  analogWrite(CAM4_OUT, 5 * onOff);
-  F1publishing = true;
-  F2publishing = true;
-  F3publishing = true;
-  F4publishing = true;
-  IMUpublishing = true;
+  FrequencyTimer2::enable();
 
-  /* enable interrupts */
-  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR,
-                  RISING);  // Falling or rising TBD
-  attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
+  /* start sampling */
+  analogWrite(CAM1_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
+  analogWrite(CAM2_OUT, 5);
+  analogWrite(CAM3_OUT, 5);
+  analogWrite(CAM4_OUT, 5);
+  digitalWrite(IMU_START, HIGH);
 }
