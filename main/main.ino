@@ -88,14 +88,13 @@ void setup() {
   digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
 
 //  await nodehandle time sync
-  while (nh.now().sec < 100000) {
+  while (!nh.connected()) {
     nh.spinOnce(); 
   }
   
   /* start sampling */
   nh.loginfo("Setup complete, enabling triggers");
   enableTriggers();
-  // Serial.begin(57600); // This takes some time so commenting it out should speed up the startup
 }
 
 
