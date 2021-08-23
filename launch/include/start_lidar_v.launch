@@ -17,6 +17,7 @@
     <arg name="pcap_time" default="false" />
     <arg name="cut_angle" default="-0.01" />
     <arg name="timestamp_first_packet" default="false" />
+    <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
 
     <!-- start nodelet manager -->
     <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen"/>
@@ -38,5 +39,14 @@
       <param name="cut_angle" value="$(arg cut_angle)"/>
       <param name="timestamp_first_packet" value="$(arg timestamp_first_packet)"/>
     </node>    
+
+    <!-- start cloud nodelet -->
+    <node pkg="nodelet" type="nodelet" name="$(arg manager)_cloud"
+          args="load velodyne_pointcloud/CloudNodelet $(arg manager)">
+      <param name="model" value="$(arg model)"/>
+      <param name="calibration" value="$(arg calibration)"/>
+      <param name="fixed_frame" value="$(arg frame_id)"/>
+      <param name="target_frame" value="$(arg frame_id)"/>
+    </node>
   </group>
 </launch>

@@ -17,5 +17,5 @@ rosbag record -O $bagDir/raw.bag \
 /F3/cam_time \
 /imu/data \
 /imu/imu_time \
-/lidar_h/velodyne_packets \
-/lidar_v/velodyne_packets
+/lidar_h/velodyne_points \
+/lidar_v/velodyne_points
