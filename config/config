@@ -341,50 +341,52 @@
     scrollback_infinite = True
   [[hz_F1]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /F1/image_raw"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /F1/image_raw"'
     exit_action = hold
     use_custom_command = True
   [[hz_F1_time]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /F1/cam_time"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /F1/cam_time"'
     exit_action = hold
     use_custom_command = True
   [[hz_F2]]
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /F2/image_raw"'
+    cursor_color = "#aaaaaa"
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /F2/image_raw"'
     exit_action = hold
     use_custom_command = True
   [[hz_F2_time]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /F2/cam_time"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /F2/cam_time"'
     exit_action = hold
     use_custom_command = True
   [[hz_F3]]
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /F3/image_raw"'
+    cursor_color = "#aaaaaa"
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /F3/image_raw"'
     exit_action = hold
     use_custom_command = True
   [[hz_F3_time]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /F3/cam_time"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /F3/cam_time"'
     exit_action = hold
     use_custom_command = True
   [[hz_imu]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /imu/data"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /imu/data"'
     exit_action = hold
     use_custom_command = True
   [[hz_imu_time]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /imu/imu_time"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /imu/imu_time"'
     exit_action = hold
     use_custom_command = True
   [[hz_lidar_h]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /lidar_h/velodyne_packets"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /lidar_h/velodyne_points"'
     exit_action = hold
     use_custom_command = True
   [[hz_lidar_v]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 5 && rostopic hz -w10 /lidar_v/velodyne_packets"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /lidar_v/velodyne_points"'
     exit_action = hold
     use_custom_command = True
   [[ig_handle_collect_bag]]
@@ -394,6 +396,6 @@
     use_custom_command = True
   [[ig_remote]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "ssh ig2@192.168.131.150;sleep 1;roslaunch ig_handle collect_raw_data.launch"'
+    custom_command = 'bash -ic "ssh ig2@192.168.1.150"'
     exit_action = hold
     use_custom_command = True
