@@ -3,7 +3,7 @@
 
 <launch>
   <group ns="lidar_h">
-    <arg name="device_ip" default="192.168.1.202" />
+    <arg name="device_ip" default="192.168.1.201" />
     <arg name="frame_id" default="lidar_h_link" />
     <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
     <arg name="model" default="VLP16" />
