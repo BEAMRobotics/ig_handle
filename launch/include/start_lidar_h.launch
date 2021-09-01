@@ -8,7 +8,7 @@
     <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
     <arg name="model" default="VLP16" />
     <arg name="pcap" default="" />
-    <arg name="port" default="2369" />
+    <arg name="port" default="2368" />
     <arg name="read_fast" default="false" />
     <arg name="read_once" default="false" />
     <arg name="repeat_delay" default="0.0" />
