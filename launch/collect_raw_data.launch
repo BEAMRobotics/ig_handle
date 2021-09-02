@@ -4,5 +4,5 @@
     <include if="$(eval arg('robot')=='heron')" file="$(find ig_handle)/launch/include/heron_includes.launch" pass_all_args="true"/>
    
     <arg name="output" default="~/bags"/>
-    <node name="record_raw_bag" pkg="ig_handle" type="record_raw.sh" output="screen" args="$(arg output)"/>
+    <node name="record_raw_bag" pkg="ig_handle" type="record_bag.sh" output="screen" args="$(arg output)"/>
 </launch>
