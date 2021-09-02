@@ -3,12 +3,12 @@
 
 <launch>
   <group ns="lidar_v">
-    <arg name="device_ip" default="192.168.1.201" />
+    <arg name="device_ip" default="192.168.1.202" />
     <arg name="frame_id" default="lidar_v_link" />
     <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
     <arg name="model" default="VLP16" />
     <arg name="pcap" default="" />
-    <arg name="port" default="2368" />
+    <arg name="port" default="2369" />
     <arg name="read_fast" default="false" />
     <arg name="read_once" default="false" />
     <arg name="repeat_delay" default="0.0" />
@@ -38,7 +38,7 @@
       <param name="pcap_time" value="$(arg pcap_time)"/>
       <param name="cut_angle" value="$(arg cut_angle)"/>
       <param name="timestamp_first_packet" value="$(arg timestamp_first_packet)"/>
-    </node>    
+    </node>
 
     <!-- start cloud nodelet -->
     <node pkg="nodelet" type="nodelet" name="$(arg manager)_cloud"
