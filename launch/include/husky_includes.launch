@@ -1,4 +1,7 @@
 <launch>
+  <!-- Start husky -->
+  <include file="$(find husky_base)/launch/base.launch" />
+
   <!-- Start handle --> 
   <include file="$(find ig_handle)/launch/include/handle_includes.launch" />
 
