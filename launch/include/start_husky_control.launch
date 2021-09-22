@@ -1,5 +1,5 @@
-<!-- modified from husky_control/launch/control.launch -->
 <?xml version="1.0"?>
+<!-- modified from husky_control/launch/control.launch -->
 <launch>
 
   <arg name="config_extras" default="$(eval optenv('HUSKY_CONFIG_EXTRAS', find('husky_control') + '/config/empty.yaml'))"/>
