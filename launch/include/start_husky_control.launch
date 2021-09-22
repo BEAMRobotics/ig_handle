@@ -1,5 +1,5 @@
-<!-- modified from husky_control/launch/control.launch -->
 <?xml version="1.0"?>
+<!-- modified from husky_control/launch/control.launch -->
 <launch>
 
   <!-- Load robot description -->
