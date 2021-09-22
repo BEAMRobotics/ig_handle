@@ -1,0 +1,4 @@
+ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", ACTION=="add", GROUP="dialout"
+ATTRS{idVendor}=="067b", ATTRS{idProduct}=="2303", ACTION=="add", SYMLINK+="prolific"
+ATTRS{idVendor}=="2639", ATTRS{idProduct}=="0003", ACTION=="add", SYMLINK+="imu"
+ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="0483", ACTION=="add", SYMLINK+="teensy"
