@@ -1,3 +1,4 @@
+<!-- modified from husky_base/launch/base.launch -->
 <?xml version="1.0"?>
 <!--
 Copyright (c) 2014, Clearpath Robotics
@@ -44,7 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     </node>
 
     <!-- Differential controller parameters and basic localization -->
-    <include file="$(find husky_control)/launch/control.launch" />
+    <include file="$(find ig_handle)/launch/include/start_husky_control.launch" />
 
     <!--Teleop -->
     <include file="$(find husky_control)/launch/teleop.launch" />
