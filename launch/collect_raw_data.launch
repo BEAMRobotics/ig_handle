@@ -1,7 +1,7 @@
 <launch>
-    <arg name="throttle" default="true"/>
     <arg name="robot" default="handle"/>
     <arg name="output" default="~/bags"/>
+    <arg name="throttle" default="false"/>
 
     <include if="$(eval arg('robot')=='handle')" file="$(find ig_handle)/launch/include/handle_includes.launch" pass_all_args="true"/>
     <include if="$(eval arg('robot')=='heron')" file="$(find ig_handle)/launch/include/heron_includes.launch" pass_all_args="true"/>
