@@ -11,9 +11,9 @@ def main(args):
         description='Pipeline of post processing steps for raw ig2 bags.')
     parser.add_argument('-b', '--bag', help='input bag file', required=True)
     parser.add_argument(
-        '-d', '--data_topics', nargs='+', help='whitespace separated list of sensor message topics', default=["/imu/data", "/F1/image_raw", "/F2/image_raw", "/F3/image_raw"])
+        '-d', '--data_topics', nargs='+', help='whitespace separated list of sensor message topics', default=["/imu/data", "/F1/image_raw", "/F2/image_raw", "/F3/image_raw", "/F4/image_raw"])
     parser.add_argument(
-        '-t', '--time_topics', nargs='+', help='whitespace separated list of time reference topics', default=["/imu/imu_time", "/F1/cam_time", "/F2/cam_time", "/F3/cam_time"])
+        '-t', '--time_topics', nargs='+', help='whitespace separated list of time reference topics', default=["/imu/imu_time", "/F1/cam_time", "/F2/cam_time", "/F3/cam_time", "/F4/cam_time"])
 
     args = parser.parse_args()
 
