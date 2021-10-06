@@ -28,15 +28,15 @@ Pins 2, 7, 8, 14 (there are\nsome more) are on PWM\nTimer 3 (FTM3) so changes\nt
 Wire Wire Line
 	4150 2000 4350 2000
 Text GLabel 4150 2000 0    50   Output ~ 0
-Cam1_Trig
+Cam2_Trig
 Text GLabel 4150 2300 0    50   Output ~ 0
 1Hz_clk
 Wire Wire Line
 	4150 2300 4350 2300
 Text GLabel 4200 2500 0    50   Output ~ 0
-Cam2_Trig
-Text GLabel 4200 2600 0    50   Output ~ 0
 Cam3_Trig
+Text GLabel 4200 2600 0    50   Output ~ 0
+Cam4_Trig
 Wire Wire Line
 	4200 2500 4350 2500
 Wire Wire Line
@@ -7108,7 +7108,7 @@ F 3 "" H 5500 3900 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 Text GLabel 4150 2100 0    50   Output ~ 0
-Cam4_Trig
+Cam1_Trig
 Wire Wire Line
 	4150 2100 4350 2100
 Text GLabel 4200 3200 0    50   Input ~ 0
@@ -7117,12 +7117,12 @@ Wire Wire Line
 	4200 3200 4350 3200
 Text Notes 2100 2100 0    50   ~ 0
 Pins 3 and 4 use PWM Timer FTM1 so\nchanges to that timer affect both pins.
-Wire Bus Line
-	6900 4300 6900 4750
 Text Notes 8150 7650 0    59   ~ 0
 5-Aug-21
 Text Notes 10550 7650 0    59   ~ 0
 B
 Text Notes 7400 7500 0    59   ~ 0
 Handle Pinout
+Wire Bus Line
+	6900 4300 6900 4750
 $EndSCHEMATC
