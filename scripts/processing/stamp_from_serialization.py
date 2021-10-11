@@ -20,7 +20,7 @@ def stamp_from_serialization(bag, outbag, topics):
         
 def main(args):
     parser = argparse.ArgumentParser(
-        description='Restamp given topics with serialization time to repair synchronization bugs.  Unspecified topics are preserved.')
+        description='Restamp given topics with serialization time to repair synchronization bugs. Unspecified topics are preserved. WARNING: This should only be used if you cannot use process_raw_bag.py')
     parser.add_argument('-b', '--bag', help='input bag file', required=True)
     parser.add_argument(
         '-t', '--topics', nargs='+', help='whitespace separated list of topics', required=True)
