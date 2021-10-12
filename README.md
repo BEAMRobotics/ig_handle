@@ -8,7 +8,7 @@ Make sure you have a bag directory located at ~/bags before using the launch fil
 
 ### Raw data
 
-Use collect_raw_data.launch to collect data + time stamps
+Use collect_raw_data.launch to collect data (sensor messages) + time stamps (TimeReference messages, if applicable) for the core ig_handle sensors.  This includes cameras F1, F2, and F3, lidar_h, and imu.
 
 ```
 
@@ -23,3 +23,5 @@ roslaunch ig_handle collect_raw_data.launch output:=~/my_folder
 ```
 
 This command will record data to "~/my_folder/2021_08_09_07_01pm/raw.bag" for example.
+
+For each robot that ig_handle has been implemented on, there 
