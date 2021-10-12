@@ -24,6 +24,8 @@ roslaunch ig_handle collect_raw_data.launch output:=~/my_folder
 
 This command will record data to "~/my_folder/2021_08_09_07_01pm/raw.bag" for example.
 
+### Using robots
+
 For each robot that ig_handle has been implemented on, there is a launch file for the additional sensors mounted to the robot.  These launch files are invoked with a launch argument called "robot" (i.e. robot:=husky).
 
 The Heron adds the DT100 sonar, camera F4, and lidar_v.  For example:
