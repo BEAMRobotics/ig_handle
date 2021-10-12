@@ -32,7 +32,7 @@ The Heron adds the DT100 sonar, camera F4, and lidar_v.  For example:
 roslaunch ig_handle collect_raw_data.launch robot:=heron
 ```
 
-The Husky adds camera F4, lidar_v, and the Husky base and control packages.  The thermal camera is in there, but it is not tested yet.
+The Husky adds camera F4, lidar_v, and the Husky base and control packages.  The thermal camera is in there, but it is not tested yet.  For example:
 
 ```
 roslaunch ig_handle collect_raw_data.launch robot:=husky
