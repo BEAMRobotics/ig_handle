@@ -11,7 +11,6 @@ def stamp_from_serialization(bag, outbag, topics):
             msg.header.stamp = t
             # preserve unspecified topics
             outbag.write(topic, msg, t)
-
         else:
             outbag.write(topic, msg, t)
 
