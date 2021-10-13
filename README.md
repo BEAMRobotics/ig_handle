@@ -1,6 +1,10 @@
 # ig_handle
 
-This package contains all necessary code to operate ig_handle.
+This package contains all code related to ig_handle.
+
+## Overview
+
+"ig_handle" describes our current data collection platform.  The hardware includes a SLAM sensor kit, a Teensy 3.6 microcontroller, a USB hub, a network switch, and an Ubuntu 18 computer.  The sensor kit is mounted on an aluminum post and the rest of the hardware is contained in a box for portability.  The kit can be used with or without a robot and with or without additional sensors.
 
 ## Launch Files
 
@@ -8,7 +12,7 @@ Make sure you have a bag directory located at ~/bags before using the launch fil
 
 ### Raw data
 
-Use collect_raw_data.launch to collect data (sensor messages) + time stamps (TimeReference messages, if applicable) for the core ig_handle sensors.  This includes cameras F1, F2, and F3, lidar_h, and imu.
+Use collect_raw_data.launch to collect data (sensor messages) + time stamps (TimeReference messages, if applicable) for the core SLAM sensor kit.  This includes cameras F1, F2, and F3, lidar_h, and imu.
 
 ```
 roslaunch ig_handle collect_raw_data.launch
@@ -36,4 +40,36 @@ The Husky adds camera F4, lidar_v, and the Husky base and control packages.  The
 
 ```
 roslaunch ig_handle collect_raw_data.launch robot:=husky
+```
+
+## Documentation
+
+### Networking
+
+Everything is currently configured to expecting a 192.168.1.XXX subnet (255.255.255.0 aka /24 mask).  The Lidars are currently configured as 192.168.1.201 (horizontal) and 192.168.1.202 (vertical).  The network switch inside of the handle box connects the lidars, the handle computer, and the outboard ethernet ports mounted on the handle box.  If you are using this switch alone, it is important to set all computers' IPs and netmasks statically.
+
+The handle's ROS computer is usually statically assigned 192.168.1.150.  In order to have this set automatically at every startup, copy 01-ig2_netplan.yaml from ig_handle/config/ to /etc/netplan/.  Next, replace "enp0s31f6" with the name of the ethernet adapter that you are using.  You can find the name (eth0, enp0s1, etc) with the command ifconfig (may have to install).  If you connect the handle to an internet connected router using one of the outboard ethernet ports, the handle computer will gain internet access for cloning and installing software.  You will also be able to network with the computer and Lidars from any computer on the router.  A router can be used without internet connection just to make it easier to connect to the handle in the field.  Make sure any router is set for the 192.168.1.XXX IP range.
+
+In order to participate with the ROS core running on the handle's ROS computer from your laptop over networking, you need to set a couple environment variables to tell your laptop the ROS core is elsewhere on the network.  A script called remote-ig.sh in ig_handle/config/ sets this for you.  You can put the following line in your ~/.bashrc file to automate it, or execute it manually:
+
+```
+source ~/catkin_ws/src/ig_handle/config/remote-ig2.sh
+```
+
+### Microcontroller
+
+The microcontroller is a Teensy 3.6, which is very similar to an Arduino with more GPIO and power.  The Teensy GPIO is used for sending trigger signals to cameras, receiving camera exposure indication signals, sending an imu start signal, receiving imu measurement indications, sending Lidar PPS (1hz synchronization pulse), and Lidar $GPRMC serial signals (simulating GPS time/location messages).  The Teensy is communicating with the handle's ROS computer using a rosserial node.  The rosserial node gives the arduino code a nodehandle to subscribe/publish messages and access synchronized ROS time.  When the Teensy receives camera/imu measurement indications, it publishes a TimeReference message.  The Lidar messages can be verified by visiting the Lidars' online configuration pages, and making sure the PPS is marked as "locked" and the GPS time is being shown and looks accurate (location is irrelevant).
+
+### Udev
+
+Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in.  For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in.  Copy 99-ig2_udev.rules from ig_handle/config/ to /etc/udev/rules.d/ in order to implement the custom rules.  The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match.  Make sure your user is in the "dialout" group (should be by default) for the rules to work.  The teensy is given a symlink found at /dev/teensy, the imu is given /dev/imu, and the Husky robot connection is given /dev/prolific.
+
+### Advanced launching
+
+The package has a launch file for each sensor, launch files for robots, and the main launch file, collect_raw_data.  The main launch file normally launches handle_includes, which launches the rosserial node, and the core sensor kit.  If a robot argument is present, then heron_includes or husky_includes is launched, which includes handle_includes plus the robot specific stuff.  If you want to customize your launch for a given application, you can comment things out of handle_includes, heron_includes, or husky_includes.
+
+Terminator layouts can be useful for quickly pulling up a complicated nested terminal layout with preset commands, such as viewing all the sensor rostopic publishing frequencies.  The terminator documenation provides more info, but be warned its finicky.  One useful terminator layout is provided that launches collect_raw_data and displays many rostopic publishing frequencies.  In order to use it, copy config from /ig_handle/config/ to ~/.config/terminator/ and run:
+
+```
+terminator -l ig_handle
 ```
