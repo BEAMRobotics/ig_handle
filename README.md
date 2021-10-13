@@ -66,7 +66,7 @@ Udev rules are used in Ubuntu to create custom USB configurations when USB devic
 
 ### Advanced launching
 
-The package has a launch file for each sensor, launch files for robots, and the main launch file, collect_raw_data.  The main launch file normally launches handle_includes, which launches the rosserial node, and the core sensor kit.  If a robot argument is present, then heron_includes or husky_includes is launched, which includes handle_includes plus the robot specific stuff.  If you want to customize your launch for a given application, you can comment things out of handle_includes, heron_includes, or husky_includes.
+The package has a launch file for each sensor, which are included or not depending on the robot.  collect_raw_data launches handle_includes (no robot arg), heron_includes (robot:=heron), or husky_includes (robot:=husky).  handle_includes has the core sensor kit launch files, then heron_includes or husky_includes have handle_includes plus robot specific stuff.  If you want to customize your launch for a given application, you can comment things out.
 
 Terminator layouts can be useful for quickly pulling up a complicated nested terminal layout with preset commands, such as viewing all the sensor rostopic publishing frequencies.  The terminator documenation provides more info, but be warned its finicky.  One useful terminator layout is provided that launches collect_raw_data and displays many rostopic publishing frequencies.  In order to use it, copy config from /ig_handle/config/ to ~/.config/terminator/ and run:
 
