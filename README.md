@@ -56,7 +56,9 @@ stamp_from_serialization.py can be used on lidar data where the PPS/$GPRMC synch
 
 If velodyne scans are recorded rather than the velodyne points and packets then unpacking them is the first step to perform:
 
-```./path_to_catkin_ws/build/rosbag_tools/unpack_velodyne_scans_main -bag_file_path /path_to_bag/raw.bag  -aggregate_packets=true```
+```
+./path_to_catkin_ws/build/rosbag_tools/unpack_velodyne_scans_main -bag_file_path /path_to_bag/raw.bag  -aggregate_packets=true
+```
 
 The following two steps are to take the raw.bag to a bag ready for SLAM:
 ```
