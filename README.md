@@ -59,8 +59,13 @@ If velodyne scans are recorded rather than the velodyne points and packets then 
 ```./path_to_catkin_ws/build/rosbag_tools/unpack_velodyne_scans_main -bag_file_path /path_to_bag/raw.bag  -aggregate_packets=true```
 
 The following two steps are to take the raw.bag to a bag ready for SLAM:
-```python2 process_raw_bag.py -b [path_to_raw_bag] -d [list_of_data_topics] -t [list_of_time_reference_topics_respectively]```
-```./debayer_downsample.sh [path_to_output_bag] [raw_image_topic] [list_of_other_topics]```
+```
+python2 process_raw_bag.py -b [path_to_raw_bag] -d [list_of_data_topics] -t [list_of_time_reference_topics_respectively]
+```
+
+```
+./debayer_downsample.sh [path_to_output_bag] [raw_image_topic] [list_of_other_topics]
+```
 
 ## Documentation
 
