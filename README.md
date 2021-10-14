@@ -54,6 +54,14 @@ process_raw_bag.py is used to combine the TimeReference and sensor messages coll
 
 stamp_from_serialization.py can be used on lidar data where the PPS/$GPRMC synchronization method failed.  If PPS/$GPRMC synchronization did not fail, do not use this script.  When it fails, the lidar data's header timestamps will not make sense, i.e. they will not start at 0 (no synchronization at all), and they will not match the rest of the bag (synchronized to the ROS clock). In this case, lidar message serialization time can be used since ethernet can convey the small messages very quickly.   Use this script before process_raw_bag.py.
 
+If velodyne scans are recorded rather than the velodyne points and packets then unpacking them is the first step to perform:
+
+`./path_to_catkin_ws/build/rosbag_tools/unpack_velodyne_scans_main -bag_file_path /path_to_bag/raw.bag  -aggregate_packets=true`
+
+The following two steps are to take the raw.bag to a bag ready for SLAM:
+1. `python2 process_raw_bag.py -b [path_to_raw_bag] -d [list_of_data_topics] -t [list_of_time_reference_topics_respectively]`
+2. `./debayer_downsample.sh [path_to_output_bag] [raw_image_topic] [list_of_other_topics]`
+
 ## Documentation
 
 ### Networking
@@ -99,3 +107,5 @@ Timestamp:
 Every ROS sensor message has a header (sensor topic + /header) with a stamp field.  This timestamp is part of the message and has nothing to do with data transport times.  For example, the lidar driver sets this field using the GPS time data forwarded by the lidar.
 
 For synchronization, the header timestamps are the important ones, since the time the message save is affected by buffering and bandwidth limitations.  So, running process_raw_bag.py resets all serialization times to match the header timestamps.  Confusion can arise viewing rqt_bag prior to processing the data, when the serialization times have not been reset yet.
+
+1. ./debayer_downsample.sh [path_to_output_bag] [raw_image_topic] [list_of_other_topics]
