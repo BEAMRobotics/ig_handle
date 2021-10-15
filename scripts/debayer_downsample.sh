@@ -9,14 +9,14 @@ then
   tmp=${image_topic#*/}
   image_namespace=${tmp%/*}
 
-  image_color=$image_namespace/image_color
-  image_downscaled=$image_namespace/downscaled/image_color
+  image_mono=$image_namespace/image_mono
+  image_downscaled=$image_namespace/downscaled/image_mono
 
   rosparam set /use_sim_time true
 
   rosbag play $bag --clock & 
-  rosrun nodelet nodelet standalone image_proc/debayer image_raw:=$image_topic image_color:=$image_color &  
-  rosrun nodelet nodelet standalone image_proc/resize image:=$image_color _scale_width:=0.25 _scale_height:=0.25 ~image:=$image_downscaled & 
+  rosrun nodelet nodelet standalone image_proc/debayer image_raw:=$image_topic image_mono:=$image_mono &  
+  rosrun nodelet nodelet standalone image_proc/resize image:=$image_mono _scale_width:=0.25 _scale_height:=0.25 ~image:=$image_downscaled & 
   rosbag record $image_downscaled $@
 
 else
