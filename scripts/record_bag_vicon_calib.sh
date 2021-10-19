@@ -17,11 +17,13 @@ rosbag record -O $bagDir/raw.bag \
 /F3/cam_time \
 /F4/image_raw  \
 /F4/cam_time \
-/thermal/image_raw/compressed \
-/imu/data \
-/imu/imu_time \
 /lidar_h/velodyne_packets \
 /lidar_h/velodyne_points \
 /lidar_v/velodyne_packets \
 /lidar_v/velodyne_points \
-/DT100/sonar_scans
+/tf \
+/vicon/SDICCheckerBoardTarget/SDICCheckerBoardTarget \
+/vicon/SDICCylinderTarget1/SDICCylinderTarget1 \
+/vicon/SDICCylinderTarget2/SDICCylinderTarget2 \
+/vicon/SDICIG2/SDICIG2 \
+/vicon/markers

@@ -1,6 +1,6 @@
 <launch>
   <!-- Start husky -->
-  <include file="$(find ig_handle)/launch/include/start_husky.launch" />
+<!--  <include file="$(find ig_handle)/launch/include/start_husky.launch" /> -->
 
   <!-- Start handle --> 
   <include file="$(find ig_handle)/launch/include/handle_includes.launch" />
@@ -12,5 +12,5 @@
   <include file="$(find ig_handle)/launch/include/start_cam_F4.launch" />
 
   <!-- Start thermal -->
-  <include file="$(find ig_handle)/launch/include/start_cam_thermal.launch" />
+  <!-- <include file="$(find ig_handle)/launch/include/start_cam_thermal.launch" /> -->
 </launch>

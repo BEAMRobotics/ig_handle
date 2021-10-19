@@ -1,0 +1,11 @@
+<launch>
+    <arg name="robot" default="handle"/>
+    <arg name="output" default="~/bags/vicon_calibration/"/>
+
+    <include if="$(eval arg('robot')=='handle')" file="$(find ig_handle)/launch/include/handle_includes.launch" pass_all_args="true"/>
+    <include if="$(eval arg('robot')=='heron')" file="$(find ig_handle)/launch/include/heron_includes.launch" pass_all_args="true"/>
+    <include if="$(eval arg('robot')=='husky')" file="$(find ig_handle)/launch/include/husky_includes.launch" pass_all_args="true"/>
+
+    <node name="record_raw_bag" pkg="ig_handle" type="record_bag_vicon_calib.sh" output="screen" args="$(arg output)"/>
+
+</launch>
