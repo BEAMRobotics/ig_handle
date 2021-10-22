@@ -2,7 +2,7 @@ network:
   version: 2
   renderer: networkd
   ethernets:
-    enp0s31f6:
+    eno1:
       dhcp4: no
       addresses:
         - 192.168.1.150/24
