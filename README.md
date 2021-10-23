@@ -89,7 +89,15 @@ The microcontroller is a Teensy 3.6, which is very similar to an Arduino with mo
 
 ### Udev
 
+This info pertains to the robot's computer (the one running the sensor drivers):
+
 Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in.  For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in.  Copy 99-ig2_udev.rules from ig_handle/config/ to /etc/udev/rules.d/ in order to implement the custom rules.  The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match.  Make sure your user is in the "dialout" group (should be by default) for the rules to work.  The teensy is given a symlink found at /dev/teensy, the imu is given /dev/imu, and the Husky robot connection is given /dev/prolific.
+
+The USB configurations assumes you are a member of the "dialout" user group.  Use the commands "groups" to see your current groups.  To add yourself to dialout:
+
+```
+sudo adduser $USER dialout
+```
 
 ### Advanced launching
 
