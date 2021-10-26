@@ -1,0 +1,7 @@
+<launch>
+  <arg name="output" default="~/bags"/>
+
+  <include file="$(find ig_handle)/launch/include/slam_includes.launch" pass_all_args="true"/>
+  <node name="record_slam_bag" pkg="ig_handle" type="record_slam_bag.sh" output="screen" args="$(arg output)"/>
+
+</launch>

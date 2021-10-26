@@ -9,7 +9,7 @@
 
     <group if="$(arg throttle)">
         <node name="throttle_topics" pkg="ig_handle" type="throttle_topics.sh" output="screen" args="$(arg output)"/>
-        <node name="record_raw_bag" pkg="ig_handle" type="record_bag_throttled.sh" output="screen" args="$(arg output)"/>
+        <node name="record_raw_bag" pkg="ig_handle" type="record_throttled_bag.sh" output="screen" args="$(arg output)"/>
     </group>
     <group unless="$(arg throttle)">
         <node name="record_raw_bag" pkg="ig_handle" type="record_bag.sh" output="screen" args="$(arg output)"/>

@@ -2,7 +2,7 @@
 
 set -e # exit on first error
 
-now=$(date +"%Y_%m_%d_%I_%M%P")
+now=$(date +"%Y_%b_%d_%I_%M%P")
 bagDir="${1/#~/$HOME}/$now"
 mkdir -p $bagDir
 echo "Collecting ig_handle bag file..."
