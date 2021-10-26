@@ -66,7 +66,8 @@ python2 process_raw_bag.py -b [path_to_raw_bag] -d [list_of_data_topics] -t [lis
 ```
 
 ```
-./debayer_downsample.sh [path_to_output_bag] [raw_image_topic] [list_of_other_topics]
+bash debayer.sh [path_to_bag] [raw_image_topic]
+bash downscale.sh [path_to_bag] [downscale_factor] [image_mono_topic]
 ```
 
 ## Documentation
