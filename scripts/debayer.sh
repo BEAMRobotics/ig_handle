@@ -14,7 +14,7 @@ then
 
   rosbag play $bag --clock & 
   rosrun nodelet nodelet standalone image_proc/debayer image_raw:=$image_topic image_mono:=$image_mono &  
-  rosbag record $image_downscaled $topics -O mono.bag
+  rosbag record $image_downscaled $topics $image_mono -O mono.bag
 
 else
   echo "Path to bag does not exist. Exiting"
