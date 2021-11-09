@@ -85,6 +85,24 @@ In order to participate with the ROS core running on the handle's ROS computer f
 source ~/catkin_ws/src/ig_handle/config/remote-ig2.sh
 ```
 
+### Hotspot
+
+The ig2 computer should be capable of starting its own hotspot. This is useful for ssh'ing into the computer and this can be enabled on startup.
+
+First, you need to manually enable hotspot by going to Wifi Settings, click the menu on the top right and click "Turn On Wi-Fi Hotpot...". To change the hotspot network settings (such as name and password), use the editor by running:
+
+```
+nm-connection-editor
+```
+
+To enable hotspot at computer startup, copy ig_handle/config/hotspot.service to /etc/systemd/
+
+You also need to check that the shell script in ig_handle/scripts/start_hotspot.sh is an excutable. If not, run:
+
+```
+sudo chmod +x ig_handle/scripts/start_hotspot.sh
+```
+
 ### Microcontroller
 
 The microcontroller is a Teensy 3.6, which is very similar to an Arduino with more GPIO and power. The Teensy GPIO is used for sending trigger signals to cameras, receiving camera exposure indication signals, sending an imu start signal, receiving imu measurement indications, sending Lidar PPS (1hz synchronization pulse), and Lidar $GPRMC serial signals (simulating GPS time/location messages). The Teensy is communicating with the handle's ROS computer using a rosserial node. The rosserial node gives the arduino code a nodehandle to subscribe/publish messages and access synchronized ROS time. When the Teensy receives camera/imu measurement indications, it publishes a TimeReference message. The Lidar messages can be verified by visiting the lidars' online configuration pages, and making sure the PPS is marked as "locked" and the GPS time is being shown and looks accurate (location is irrelevant).

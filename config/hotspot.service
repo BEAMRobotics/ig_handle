@@ -1,0 +1,9 @@
+[Unit]
+Description=hotspot script
+
+[Service]
+ExecStart=/home/ig2/catkin_ws/src/ig_handle/scripts/start_hotspot.sh
+
+[Install]
+WantedBy=multi-user.target
+

@@ -8,13 +8,13 @@ then
   set -- "${@:3}"
   tmp=${image_topic#*/}
   image_namespace=${tmp%/*}
-  image_mono=/$image_namespace/image_mono
+  image_color=/$image_namespace/image_color
 
   rosparam set /use_sim_time true
 
   rosbag play $bag --clock & 
-  rosrun nodelet nodelet standalone image_proc/debayer image_raw:=$image_topic image_mono:=$image_mono &  
-  rosbag record $image_downscaled $topics $image_mono -O mono.bag
+  rosrun nodelet nodelet standalone image_proc/debayer image_raw:=$image_topic image_color:=$image_color &  
+  rosbag record $image_downscaled $topics $image_color -O color.bag
 
 else
   echo "Path to bag does not exist. Exiting"
