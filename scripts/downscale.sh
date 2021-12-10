@@ -13,7 +13,7 @@ then
 
   rosbag play $bag --clock &
   rosrun nodelet nodelet standalone image_proc/resize image:=$image_topic _scale_width:=$downscale_factor _scale_height:=$downscale_factor ~image:=$image_downscaled & 
-  rosbag record $image_downscaled $topics $image_downscaled -O downscaled.bag
+  rosbag record $topics $image_downscaled -O downscaled.bag
 
 else
   echo "Path to bag does not exist. Exiting"
