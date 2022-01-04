@@ -30,7 +30,7 @@ def restamp(bag, outbag, data_topics, time_topics):
 
         # preserve unspecified topics
         elif topic not in time_topics:
-            outbag.write(topic, msg, msg.header.stamp)
+            outbag.write(topic, msg, t)
 
     return outbag
     
