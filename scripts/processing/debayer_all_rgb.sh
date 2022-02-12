@@ -21,9 +21,9 @@ then
   rosrun nodelet nodelet load image_proc/debayer nodelet_manager __name:=nodelet2 image_raw:=/F2/image_raw image_color:=/F2/image_color &  
   rosrun nodelet nodelet load image_proc/debayer nodelet_manager __name:=nodelet3 image_raw:=/F3/image_raw image_color:=/F3/image_color &  
   rosrun nodelet nodelet load image_proc/debayer nodelet_manager __name:=nodelet4 image_raw:=/F4/image_raw image_color:=/F4/image_color &  
-  rosbag record $topics_filterd /F1/image_color /F2/image_color /F3/image_color /F4/image_color -O mono.bag
+  rosbag record $topics_filterd /F1/image_color /F2/image_color /F3/image_color /F4/image_color -O debayered_colour.bag
 
 else
   echo "Path to bag does not exist. Exiting"
-  echo "Usage: ./debayer.sh [path_to_bag] [raw_image_topic]"
+  echo "Usage: ./debayer.sh [path_to_bag]"
 fi
