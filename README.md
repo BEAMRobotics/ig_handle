@@ -73,6 +73,9 @@ bash downscale.sh [path_to_bag] [downscale_factor] [image_mono_topic]
 
 ## Documentation
 
+### ECAD
+Electrical drawings and schematics for ig_handle's mapping hardware are found in the ecad folder. It uses the open source ECAD tool KiCad (https://kicad.org). The purpose of the hardware is to provide time synchronization to the connected sensors, those being: Teensy 3.6, Velodyne VLP LiDAR, Flir Blackfly USB3 Cameras, and a Xsens MTi-10 series IMU
+
 ### Networking
 
 Everything is currently configured to expecting a 192.168.1.XXX subnet (255.255.255.0 aka /24 mask). The lidars are currently configured as 192.168.1.201 (horizontal) and 192.168.1.202 (vertical). The network switch inside of the handle box connects the lidars, the handle computer, and the outboard ethernet ports mounted on the handle box. If you are using this switch alone, it is important to set all computers' IPs and netmasks statically.
