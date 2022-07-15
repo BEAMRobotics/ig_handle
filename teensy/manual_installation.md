@@ -1,3 +1,7 @@
+# Manual installation of main.ino
+
+See the following [link](https://github.com/BEAMRobotics/beam_robotics/wiki/Beam-Robotics-Installation-Guide) for installing dependencies on beam robots. Instructions for a manual install are provided below:
+
 ### 1. Install Arduino + Teensyduino (https://www.pjrc.com/teensy/td_download.html)  
 ```
 wget https://downloads.arduino.cc/arduino-1.8.13-linux64.tar.xz  
