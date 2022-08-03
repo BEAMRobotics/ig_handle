@@ -6,6 +6,10 @@ This package contains all code related to ig_handle.
 
 "ig_handle" describes our current data collection platform. The hardware includes a SLAM sensor kit, a Teensy 3.6 microcontroller, a USB hub, a network switch, and an Ubuntu 18 computer. The sensor kit is mounted on an aluminum post and the rest of the hardware is contained in a box for portability. The kit can be used with or without a robot and with or without additional sensors.
 
+## Installation
+
+For installation, please refer to the [Beam Installation Guide](https://github.com/BEAMRobotics/beam_robotics/wiki/Beam-Robotics-Installation-Guide).
+
 ## Launch Files
 
 Make sure you have a bag directory located at ~/bags before using the launch files.
@@ -48,7 +52,7 @@ In order to save data, collect_raw_data.launch calls record_bag.sh found in ig_h
 
 ### Processing
 
-Processing scripts for ig_handle data are stored in ig_handle/scripts/processing. The python requirements for these scripts are stored in ig_handle/requirements.txt. The pip install can be automated using install.bash found in ig_handle/scripts/.
+Processing scripts for ig_handle data are stored in ig_handle/scripts/processing.
 
 process_raw_bag.py is used to combine the TimeReference and sensor messages collected during data capture. The script replaces the sensor messages' default timestamps with the TimeReference timestamps using a simple first in first out queue at the moment. This scripts also reserializes every message to its header timestamp (see additional notes for more info). The interface for the script is best explained by reading the argsparse help messages. The bagfile argument (-b) needs to be set every time to find the input bag. The values for data and time topics (-d, -t) are set correctly by default, so only specify those arguments if you've changed the data collection process.
 
