@@ -1,19 +1,20 @@
 #include <ros.h>
 #include <sensor_msgs/TimeReference.h>
-#include <FrequencyTimer2.h>
-#include <TimeLib.h>
+#include <FrequencyTimer2/FrequencyTimer2.h>
+#include <Time/TimeLib.h>
+#include <string.h>
 
-#define GPSERIAL Serial1
+#define GPSERIAL Serial
 #define PPS_PIN 6
 #define IMU_IN 12
 #define CAM1_OUT 2
 #define CAM2_OUT 7
-#define CAM3_OUT 8
-#define CAM4_OUT 3
+/* #define CAM3_OUT 8
+#define CAM4_OUT 3 */
 #define CAM1_IN 9
 #define CAM2_IN 10
-#define CAM3_IN 11
-#define CAM4_IN 24
+/*#define CAM3_IN 11
+#define CAM4_IN 24 */
 #define IMU_START 23
 
 /* ROS node handler */
@@ -22,18 +23,21 @@ ros::NodeHandle nh;
 sensor_msgs::TimeReference time_msg;
 ros::Publisher F1_time("/F1/cam_time", &time_msg);
 ros::Publisher F2_time("/F2/cam_time", &time_msg);
-ros::Publisher F3_time("/F3/cam_time", &time_msg);
-ros::Publisher F4_time("/F4/cam_time", &time_msg);
+// ros::Publisher F3_time("/F3/cam_time", &time_msg);
+// ros::Publisher F4_time("/F4/cam_time", &time_msg);
 ros::Publisher IMU_time("/imu/imu_time", &time_msg);
-volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
-              F3_closed = false, F4_closed = false, IMU_sampled = false;
-ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp, IMU_stamp;
+// volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
+//              F3_closed = false, F4_closed = false, IMU_sampled = false;
+
+volatile bool sendNMEA = false, F1_closed = false, F2_closed = false, IMU_sampled = false;
+ // ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp, IMU_stamp;
+ros::Time F1_close_stamp, F2_close_stamp, IMU_stamp;
 
 ///* Forward function declarations */
 void cam1_ISR(void);
 void cam2_ISR(void);
-void cam3_ISR(void);
-void cam4_ISR(void);
+// void cam3_ISR(void);
+// void cam4_ISR(void);
 void IMU_ISR(void);
 void setSendNMEA(void);
 void enableTriggers();
@@ -59,30 +63,30 @@ void setup() {
   nh.initNode();
   nh.advertise(F1_time);
   nh.advertise(F2_time);
-  nh.advertise(F3_time);
-  nh.advertise(F4_time);
+ // nh.advertise(F3_time);
+ // nh.advertise(F4_time);
   nh.advertise(IMU_time);
 
 
  /* configure input pins */
   pinMode(CAM1_IN, INPUT_PULLUP);
   pinMode(CAM2_IN, INPUT_PULLUP);
-  pinMode(CAM3_IN, INPUT_PULLUP);
-  pinMode(CAM4_IN, INPUT_PULLUP);
+  //pinMode(CAM3_IN, INPUT_PULLUP);
+  //pinMode(CAM4_IN, INPUT_PULLUP);
   pinMode(IMU_IN, INPUT);
 
   /* enable interrupts */
   attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
+  //attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
+  //attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
 
   /* set up the camera triggers but don't start them yet either */
-  analogWriteFrequency(CAM1_OUT, 20.0);  // 20.0 Hz base frequency for the PWM signal
-  analogWriteFrequency(CAM2_OUT, 20.0);  // We're using a PWM signal because it's a way of offloading
-  analogWriteFrequency(CAM3_OUT, 20.0);  // the task to free up the main loop
-  analogWriteFrequency(CAM4_OUT, 20.0);
+  analogWrite(CAM1_OUT, 20.0);  // 20.0 Hz base frequency for the PWM signal
+  analogWrite(CAM2_OUT, 20.0);  // We're using a PWM signal because it's a way of offloading
+  //analogWrite(CAM3_OUT, 20.0);  // the task to free up the main loop
+ // analogWrite(CAM4_OUT, 20.0);
   /* setup IMU_START ping as output */
   pinMode(IMU_START, OUTPUT);
   digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
@@ -110,14 +114,14 @@ void loop() {
     time_t t = nh.now().sec;
     sprintf(time_now, "%02i%02i%02i", hour(t), minute(t), second(t));
     sprintf(date_now, "%02i%02i%02i", day(t), month(t), year(t) % 100);
-    String nmea_string = F("GPRMC,") + String(time_now) +
-                         F(",A,4365.107,N,79347.702,E,022.4,084.4,") +
+    String nmea_string = String(F("GPRMC,")) + String(time_now) +
+                         String(F(",A,4365.107,N,79347.702,E,022.4,084.4,")) +
                          String(date_now) + ",003.1,W";
     String chk = checksum(nmea_string);
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
     GPSERIAL.print(nmea_string);
     sendNMEA = false;
-    digitalWriteFast(PPS_PIN,
+    digitalWrite(PPS_PIN,
                      LOW);  // minimum pulse duration required by LiDAR is 10 us
                      
 
@@ -133,6 +137,7 @@ void loop() {
     time_msg.time_ref = F2_close_stamp;
     F2_time.publish(&time_msg);
   }
+  /*
   if (F3_closed == true) {
     F3_closed = false;
     time_msg.time_ref = F3_close_stamp;
@@ -142,7 +147,7 @@ void loop() {
     F4_closed = false;
     time_msg.time_ref = F4_close_stamp;
     F4_time.publish(&time_msg);
-  }
+  } */
   if (IMU_sampled == true) {
     IMU_sampled = false;
     time_msg.time_ref = IMU_stamp;
@@ -161,7 +166,7 @@ void setSendNMEA_ISR(void) {
    * of this code is to output accurate PPS signal and this is the most accurate
    * way that abides by the format constraints on the signal.
    */
-  digitalWriteFast(PPS_PIN, HIGH);
+  digitalWrite(PPS_PIN, HIGH);
   sendNMEA = true;
 //  microsSincePPS = 0;
 }
@@ -175,6 +180,7 @@ void cam2_ISR(void) {
   F2_close_stamp = nh.now();
   F2_closed = true;
 }
+/*
 void cam3_ISR(void) {
   F3_close_stamp = nh.now();
   F3_closed = true;
@@ -182,7 +188,7 @@ void cam3_ISR(void) {
 void cam4_ISR(void) {
   F4_close_stamp = nh.now();
   F4_closed = true;
-}
+} */
 void IMU_ISR(void) {
   IMU_stamp = nh.now();
   IMU_sampled = true;
@@ -213,7 +219,7 @@ void enableTriggers() {
   /* start sampling */
   analogWrite(CAM1_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
   analogWrite(CAM2_OUT, 5);
-  analogWrite(CAM3_OUT, 5);
-  analogWrite(CAM4_OUT, 5);
+ // analogWrite(CAM3_OUT, 5);
+ // analogWrite(CAM4_OUT, 5);
   digitalWrite(IMU_START, HIGH);
 }
