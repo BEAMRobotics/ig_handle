@@ -1,7 +1,7 @@
 #include <ros.h>
 #include <sensor_msgs/TimeReference.h>
-#include <FrequencyTimer2/FrequencyTimer2.h>
-#include <Time/TimeLib.h>
+//#include <FrequencyTimer2/FrequencyTimer2.h>
+#include <TimeLib.h>
 #include <string.h>
 
 #define GPSERIAL Serial
@@ -56,8 +56,8 @@ void setup() {
    *    - PPS but don't start it yet
         - Attach */
   pinMode(PPS_PIN, OUTPUT);  // pin 5 is still driven by default but has a 50% duty cycle
-  FrequencyTimer2::setPeriod(1000000);  // 10^6 microseconds, 1 second
-  FrequencyTimer2::setOnOverflow(setSendNMEA_ISR);  // sets the function that runs when the timer overflows
+ // FrequencyTimer2::setPeriod(1000000);  // 10^6 microseconds, 1 second
+ // FrequencyTimer2::setOnOverflow(setSendNMEA_ISR);  // sets the function that runs when the timer overflows
   
   // node initialization
   nh.initNode();
@@ -83,10 +83,10 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
 
   /* set up the camera triggers but don't start them yet either */
-  analogWrite(CAM1_OUT, 20.0);  // 20.0 Hz base frequency for the PWM signal
-  analogWrite(CAM2_OUT, 20.0);  // We're using a PWM signal because it's a way of offloading
-  //analogWrite(CAM3_OUT, 20.0);  // the task to free up the main loop
- // analogWrite(CAM4_OUT, 20.0);
+  analogWriteFrequency(CAM1_OUT, 20.0);  // 20.0 Hz base frequency for the PWM signal
+  analogWriteFrequency(CAM2_OUT, 20.0);  // We're using a PWM signal because it's a way of offloading
+  //analogWriteFrequency(CAM3_OUT, 20.0);  // the task to free up the main loop
+ // analogWriteFrequency(CAM4_OUT, 20.0);
   /* setup IMU_START ping as output */
   pinMode(IMU_START, OUTPUT);
   digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
@@ -214,7 +214,7 @@ void enableTriggers() {
   // By switching to nh.now() we shouldn't need this wait
   // while (!(micros() % 1000000) {
   // }
-  FrequencyTimer2::enable();
+  //FrequencyTimer2::enable();
 
   /* start sampling */
   analogWrite(CAM1_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
