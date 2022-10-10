@@ -1,0 +1,22 @@
+Calibration results 
+====================
+Camera-system parameters:
+	cam0 (/F1/image_raw):
+	 type: <class 'aslam_cv.libaslam_cv_python.DoubleSphereCameraGeometry'>
+	 distortion: [] +- []
+	 projection: [ -0.29252834   0.55570013 373.45910782 372.39865814 639.49458954
+ 473.64703625] +- [ 0.02678267  0.01769089  0.60800002  0.59976476 11.87396014 14.49744067]
+	 reprojection error: [0.000000, -0.000000] +- [0.206391, 0.160767]
+
+
+
+Target configuration
+====================
+
+  Type: checkerboard
+  Rows
+    Count: 7
+    Distance: 0.021 [m]
+  Cols
+    Count: 10
+    Distance: 0.021 [m]

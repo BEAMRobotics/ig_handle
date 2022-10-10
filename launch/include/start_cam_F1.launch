@@ -60,8 +60,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <param name="auto_white_balance"              value="$(arg color_balance)" />
       <param name="image_format_color_coding"       value="$(arg encoding)" />
 
-      <!-- triggering options provided in config/ -->
-      <rosparam command="load" file="$(find ig_handle)/config/ig_handle_flir_config.yaml" />
+      <!-- triggering options provided in config/ 
+      <rosparam command="load" file="$(find ig_handle)/config/ig_handle_flir_config.yaml" /> -->
     </node>
 
     <!-- Debayering nodelet -->
