@@ -9,9 +9,7 @@ Quantity,Part Number,Description,Notes
 25,2946-221-412/VE00-2500-ND,SPLICE LEVER 24-12AWG 2POS,useful for connecting power or signals
 10,2946-221-413/VE00-2500-ND,SPLICE LEVER 24-12AWG 3POS,useful for connecting power or signals
 10,2946-221-415/VE00-1000-ND,SPLICE LEVER 24-12AWG 5POS,useful for connecting power or signals
-2,S7057-ND,CONN HDR 24POS 0.1 GOLD PCB,teensy header
-1,A134677-ND,TERM BLK 12P SIDE ENT 2.54MM PCB,screw terminals
-1,SBB400-ND,BREADBOARD GENERAL PURPOSE PTH,teensy mount board
+1,LS-00018,BREADBOARD - 400 TIE POINTS,teensy mount board
 1,1568-DEV-16771-ND,TEENSY 4.1,required for time-sync
 ,,,
 8020,,,
@@ -26,7 +24,7 @@ Quantity,Part Number,Description,Notes
 4,94868A765,"Female Threaded Hex Standoff, 18-8 Stainless Steel, 10mm Hex, 40mm Long, M5 x 0.8mm Thread",Posts between camera and lidar plates
 8,92855A513,"18-8 Stainless Steel Low-Profile Socket Head Screws with Hex Drive, M5 x 0.8 mm Thread, 12 mm Long",Post screws for part 94868A765
 ,,,
-Sensors (direct from manufacturer),,,
+Sensors (direct from manufacturer unless specified otherwise),,,
 Quantity,Part Number,Description,Notes
 1,,Velodyne VLP-16,Cable modified to have ethernet connection for data and PPS and GPRMC input for timing
 2,BFS-U3-13Y3M-C,Blackfly S USB3,
@@ -34,4 +32,4 @@ Quantity,Part Number,Description,Notes
 2,FE185C086HA-1,"Fujinon FE185C086HA-1 5-Megapixel Fixed Fish-Eye Lens, 2.7mm",
 2,ACC-01-3009,Hirose HR10 (6 Pin) GPIO cable,
 2,ACC-01-2304,USB 3.1 Locking Cable (Cast Metal Connectors),
-1,MTI-30-2A8G4,MTi-30 AHRS,
+1,CA-MP2-MTI,MTi-30 AHRS cable, From Digikey
