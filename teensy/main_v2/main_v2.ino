@@ -6,14 +6,14 @@
 
 #define GPSERIAL Serial1
 #define USE_USBCON
-#define PPS_PIN 6   
+#define PPS_PIN 7   
 #define IMU_IN 8
 #define CAM1_OUT 3
-#define CAM2_OUT 11
+#define CAM2_OUT 5
 /* #define CAM3_OUT 8
 #define CAM4_OUT 3 */
-#define CAM1_IN 5
-#define CAM2_IN 7
+#define CAM1_IN 4
+#define CAM2_IN 6
 /*#define CAM3_IN 11
 #define CAM4_IN 24 */
 #define IMU_START 9 
@@ -42,13 +42,8 @@ void IMU_ISR(void);
 void setSendNMEA(void);
 void enableTriggers();
 String checksum(String msg);
-int currentVal1 = 0;
-int previousVal1 = 0;
-int currentVal2 = 0;
-int previousVal2 = 0;
 
-bool cam1Record = false;
-bool cam2Record = false;
+
 /*
  * Initial setup for the arduino sketch
  * This function performs:
@@ -77,14 +72,14 @@ void setup() {
 
 
  /* configure input pins */
-  pinMode(CAM1_IN, INPUT_PULLDOWN);
-  pinMode(CAM2_IN, INPUT_PULLDOWN);
+  pinMode(CAM1_IN, INPUT_PULLUP);
+  pinMode(CAM2_IN, INPUT_PULLUP);
  // pinMode(CAM3_IN, INPUT_PULLUP);
  // pinMode(CAM4_IN, INPUT_PULLUP);
-  pinMode(IMU_IN, INPUT_PULLUP);
+  pinMode(IMU_IN, INPUT);
 
   /* enable interrupts */
-  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING); // set to FALLING if cam1_in and cam2_in are set to INPUT_PULLUP otherwise the time topics will be out of sync with eachother
+  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
   //attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
   //attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
@@ -128,7 +123,7 @@ void loop() {
                          String(date_now) + ",003.1,W";
     String chk = checksum(nmea_string);
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
-    // GPSERIAL.print(nmea_string);
+    GPSERIAL.print(nmea_string);
     sendNMEA = false;
     digitalWriteFast(PPS_PIN,
                      LOW);  // minimum pulse duration required by LiDAR is 10 us
@@ -141,7 +136,6 @@ void loop() {
     F1_closed = false;
     time_msg.time_ref = F1_close_stamp;
     F1_time.publish(&time_msg);
-    
   }
   if (F2_closed == true) {
     F2_closed = false;
@@ -183,31 +177,12 @@ void setSendNMEA_ISR(void) {
 
 // Timestamp creation interrupts
 void cam1_ISR(void) {
-  currentVal1 = digitalRead(CAM1_IN);
-  if ((currentVal1 != previousVal1) && !cam1Record)
-  {
-    F1_close_stamp = nh.now();
-    F1_closed = true; 
-    cam1Record = true;   
-  }
-  else if((currentVal1 == previousVal1))
-  {
-    cam1Record = false;
-    
-  }
+  F1_close_stamp = nh.now();
+  F1_closed = true;
 }
 void cam2_ISR(void) {
-  currentVal2 = digitalRead(CAM2_IN);
-  if ((currentVal2 != previousVal2) && !cam2Record)
-  {
-    F2_close_stamp = nh.now();
-    F2_closed = true;    
-  }
-  else if((currentVal2 == previousVal2))
-  {
-    cam2Record == false
-  }
-  
+  F2_close_stamp = nh.now();
+  F2_closed = true;
 }/*
 void cam3_ISR(void) {
   F3_close_stamp = nh.now();
@@ -218,6 +193,7 @@ void cam4_ISR(void) {
   F4_closed = true;
 }*/
 void IMU_ISR(void) {
+  nh.loginfo("IMU isr called");
   IMU_stamp = nh.now();
   IMU_sampled = true;
 }

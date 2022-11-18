@@ -30,7 +30,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
   <!-- When unspecified, the driver will use the default framerate as given by the
       camera itself. Use the parameter 'control_frame_rate' to enable manual frame 
       rate control, and 'frame_rate' to set the frame rate value. -->
-  <arg name="control_frame_rate"        default="True" />
+  <arg name="control_frame_rate"        default="False" />
   <arg name="frame_rate"                default="20" />
 
   <!-- Disabling ISP will dramatically increase frame-rate. However, it can only be 
@@ -60,8 +60,8 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       <param name="auto_white_balance"              value="$(arg color_balance)" />
       <param name="image_format_color_coding"       value="$(arg encoding)" />
 
-      <!-- triggering options provided in config/ 
-      <rosparam command="load" file="$(find ig_handle)/config/ig_handle_flir_config.yaml" /> -->
+      <!-- triggering options provided in config/ -->
+      <rosparam command="load" file="$(find ig_handle)/config/ig_handle_flir_syn_config.yaml" /> 
     </node>
 
     <!-- Debayering nodelet -->

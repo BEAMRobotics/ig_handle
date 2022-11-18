@@ -1,0 +1,7 @@
+<launch>
+  <!-- Start ros serial -->
+  <include file="$(find ig_handle)/launch/include/start_rosserial.launch" />
+
+  <!-- Start IMU -->
+  <include file="$(find ig_handle)/launch/include/start_imu.launch" />
+</launch>

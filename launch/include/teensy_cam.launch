@@ -2,13 +2,7 @@
   <!-- Start ros serial -->
   <include file="$(find ig_handle)/launch/include/start_rosserial.launch" />
 
-  <!-- Start lidar -->
-  <include file="$(find ig_handle)/launch/include/start_lidar_h.launch"/>
-
   <!-- Start cameras -->
   <include file="$(find ig_handle)/launch/include/start_cam_F1.launch" />
   <include file="$(find ig_handle)/launch/include/start_cam_F2.launch" />
-
-  <!-- Start IMU -->
-  <include file="$(find ig_handle)/launch/include/start_imu.launch" />
 </launch>
