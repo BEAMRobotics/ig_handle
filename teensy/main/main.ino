@@ -6,14 +6,14 @@
 
 #define GPSERIAL Serial1
 #define USE_USBCON
-#define PPS_PIN 6   
+#define PPS_PIN 7   
 #define IMU_IN 8
 #define CAM1_OUT 3
 #define CAM2_OUT 11
 /* #define CAM3_OUT 8
 #define CAM4_OUT 3 */
 #define CAM1_IN 5
-#define CAM2_IN 7
+#define CAM2_IN 6
 /*#define CAM3_IN 11
 #define CAM4_IN 24 */
 #define IMU_START 9 
@@ -42,10 +42,10 @@ void IMU_ISR(void);
 void setSendNMEA(void);
 void enableTriggers();
 String checksum(String msg);
-int currentVal1 = 0;
-int previousVal1 = 0;
-int currentVal2 = 0;
-int previousVal2 = 0;
+int current_val_1 = 0;
+int base_val_1 = 0;
+int current_val_2 = 0;
+int base_val_2 = 0;
 
 bool cam1Record = false;
 bool cam2Record = false;
@@ -183,29 +183,30 @@ void setSendNMEA_ISR(void) {
 
 // Timestamp creation interrupts
 void cam1_ISR(void) {
-  currentVal1 = digitalRead(CAM1_IN);
-  if ((currentVal1 != previousVal1) && !cam1Record)
+  current_val_1 = digitalRead(CAM1_IN);
+  if ((current_val_1 != base_val_1) && !cam1Record)
   {
     F1_close_stamp = nh.now();
     F1_closed = true; 
     cam1Record = true;   
   }
-  else if((currentVal1 == previousVal1))
+  else if((current_val_1 == base_val_1))
   {
     cam1Record = false;
     
   }
 }
 void cam2_ISR(void) {
-  currentVal2 = digitalRead(CAM2_IN);
-  if ((currentVal2 != previousVal2) && !cam2Record)
+  current_val_2 = digitalRead(CAM2_IN);
+  if ((current_val_2 != base_val_2) && !cam2Record)
   {
     F2_close_stamp = nh.now();
-    F2_closed = true;    
+    F2_closed = true; 
+    cam2Record = true;   
   }
-  else if((currentVal2 == previousVal2))
+  else if((current_val_2 == base_val_2))
   {
-    cam2Record == false
+    cam2Record = false;
   }
   
 }/*
