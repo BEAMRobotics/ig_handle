@@ -75,7 +75,6 @@ void setup() {
   nh.advertise(F4_time);
   nh.advertise(IMU_time);
 
-
  /* configure input pins */
   pinMode(CAM1_IN, INPUT_PULLDOWN);
   pinMode(CAM2_IN, INPUT_PULLDOWN);
@@ -130,8 +129,7 @@ void loop() {
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
     GPSERIAL.print(nmea_string);
     sendNMEA = false;
-    digitalWriteFast(PPS_PIN,LOW);  // minimum pulse duration required by LiDAR is 10 us
-    
+    digitalWriteFast(PPS_PIN,LOW);  // minimum pulse duration required by LiDAR is 10 us    
   }
   
   if (F1_closed == true) {
