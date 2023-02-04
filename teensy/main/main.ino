@@ -31,7 +31,6 @@ ros::Publisher F4_time("/F4/cam_time", &time_msg);
 ros::Publisher IMU_time("/imu/imu_time", &time_msg);
 IntervalTimer teensy_clock;
 
-
 ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp, IMU_stamp;
 
 ///* Forward function declarations */

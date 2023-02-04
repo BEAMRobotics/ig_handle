@@ -1,13 +1,13 @@
 enable_trigger: 'On'
 line_mode: 'Output'
-line_selector: 'Line1'
+line_selector: 'Line2'
 line_source: 'ExposureActive'
 trigger_activation_mode: 'RisingEdge'
 trigger_selector: 'FrameStart'
-trigger_source: 'Line0'
+trigger_source: 'Line3'
 trigger_overlap_mode: 'ReadOut'
 
-image_format_color_coding: BayerRG8
+image_format_color_coding: Mono8
 auto_sharpness: true
 gamma_enable: false
 auto_white_balance: Continuous
@@ -16,3 +16,4 @@ exposure_auto: 'Continuous'
 auto_exposure_time_upper_limit: 24000 # increase until frame rate drops
 
 timeout: 1000
+
