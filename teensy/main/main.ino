@@ -2,25 +2,27 @@
 #include <sensor_msgs/TimeReference.h>
 #include <TimeLib.h>
 
-#define GPSERIAL Serial1 //GPRMC Lidar Cable
+#define GPSERIAL Serial1 // $GPRMC
 #define USE_USBCON
 
 // Electrical component pin numbers
 #define PPS_PIN 7   
 #define IMU_IN 8    // IMU_SyncIn
-#define CAM1_OUT 3  //Cam1_Trig
-#define CAM2_OUT 4  //Cam2_Trig
-#define CAM3_OUT 11 //Cam3_Trig
-#define CAM4_OUT 10 //Cam4_Trig
-#define CAM1_IN 5   //Cam1_Exp
-#define CAM2_IN 6   //Cam2_Exp
-#define CAM3_IN 27  //Cam3_Exp
-#define CAM4_IN 24  //Cam4_Exp
-#define IMU_START 9 //IMU_SyncOut
+#define CAM1_OUT 3  // Cam1_Trig
+#define CAM2_OUT 4  // Cam2_Trig
+#define CAM3_OUT 11 // Cam3_Trig
+#define CAM4_OUT 10 // Cam4_Trig
+#define CAM1_IN 5   // Cam1_Exp
+#define CAM2_IN 6   // Cam2_Exp
+#define CAM3_IN 27  // Cam3_Exp
+#define CAM4_IN 24  // Cam4_Exp
+#define IMU_START 9 // IMU_SyncOut
 
 /* ROS node handler */
 ros::NodeHandle nh;
-/* Trigger variables for camera */
+/* Trigger variables for camera and imu*/
+volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
+              F3_closed = false, F4_closed = false, IMU_sampled = false; 
 sensor_msgs::TimeReference time_msg;
 ros::Publisher F1_time("/F1/cam_time", &time_msg);
 ros::Publisher F2_time("/F2/cam_time", &time_msg);
@@ -29,8 +31,7 @@ ros::Publisher F4_time("/F4/cam_time", &time_msg);
 ros::Publisher IMU_time("/imu/imu_time", &time_msg);
 IntervalTimer teensy_clock;
 
-volatile bool sendNMEA = false, F1_closed = false, F2_closed = false, IMU_sampled = false,
-              F3_closed = false, F4_closed = false; 
+
 ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp, IMU_stamp;
 
 ///* Forward function declarations */
@@ -43,11 +44,12 @@ void setSendNMEA(void);
 void enableTriggers();
 String checksum(String msg);
 
-// Booleans to account for system noise to ensure each image gets 1 time stamp
+// Booleans to ensure synchronized camera capture
 bool cam1_capture = false;
 bool cam2_capture = false;
 bool cam3_capture = false;
 bool cam4_capture = false;
+
 /*
  * Initial setup for the arduino sketch
  * This function performs:
@@ -63,9 +65,9 @@ void setup() {
    */
 
   pinMode(PPS_PIN, OUTPUT);  // pin 5 is still driven by default but has a 50% duty cycle
-  teensy_clock.begin(setSendNMEA_ISR,1000000); // call setSendNMEA_ISR ever 10^6 microseconds
+  teensy_clock.begin(setSendNMEA_ISR,1000000); // call setSendNMEA_ISR every 10^6 microseconds
     
-  // node initializaGPSERIALtion
+  // node initialization
   nh.initNode();
   nh.advertise(F1_time);
   nh.advertise(F2_time);
@@ -77,12 +79,12 @@ void setup() {
  /* configure input pins */
   pinMode(CAM1_IN, INPUT_PULLDOWN);
   pinMode(CAM2_IN, INPUT_PULLDOWN);
-  pinMode(CAM3_IN, INPUT_PULLUP);
-  pinMode(CAM4_IN, INPUT_PULLUP);
-  pinMode(IMU_IN, INPUT_PULLUP);
+  pinMode(CAM3_IN, INPUT_PULLDOWN);
+  pinMode(CAM4_IN, INPUT_PULLDOWN);
+  pinMode(IMU_IN,  INPUT_PULLUP);
 
   /* enable interrupts */
-  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING); 
+  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
@@ -96,6 +98,8 @@ void setup() {
   /* setup IMU_START ping as output */
   pinMode(IMU_START, OUTPUT);
   digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
+  
+  // nh.loginfo(nmea_string.c_str());
 
   // await nodehandle time sync
   while (!nh.connected()) {
@@ -107,7 +111,6 @@ void setup() {
   enableTriggers();
 }
 
-
 /*
  * Continously looping function performs the following:
  *  - Triggering camera line at certain frequency and publishes the timestamp to
@@ -115,7 +118,6 @@ void setup() {
  *  - Trigger lidar line (PPS) and transmits NMEA string over Serial1
  */
 void loop() {
-
   if (sendNMEA == true) {
     char time_now[7], date_now[7];
     time_t t = nh.now().sec;
@@ -129,13 +131,13 @@ void loop() {
     GPSERIAL.print(nmea_string);
     sendNMEA = false;
     digitalWriteFast(PPS_PIN,LOW);  // minimum pulse duration required by LiDAR is 10 us
+    
   }
   
   if (F1_closed == true) {
     F1_closed = false;
     time_msg.time_ref = F1_close_stamp;
-    F1_time.publish(&time_msg);
-    
+    F1_time.publish(&time_msg);    
   }
   if (F2_closed == true) {
     F2_closed = false;
@@ -187,6 +189,7 @@ void cam1_ISR(void) {
     cam1_capture = false; 
   }
 }
+
 void cam2_ISR(void) {
   
   if (digitalRead(CAM2_IN) && !cam2_capture)
@@ -198,9 +201,9 @@ void cam2_ISR(void) {
   else
   {
     cam2_capture = false;
-  }
-  
+  }  
 }
+
 void cam3_ISR(void) {
   if(digitalRead(CAM3_IN)&& !cam3_capture)
   {
@@ -211,9 +214,9 @@ void cam3_ISR(void) {
   else
   {
     cam3_capture = false;
-  }
- 
+  } 
 }
+
 void cam4_ISR(void) {
   if(digitalRead(CAM4_IN) && !cam4_capture)
   {
@@ -224,14 +227,15 @@ void cam4_ISR(void) {
   else
   {
     cam4_capture = false;
-  }
-  
+  }  
 }
+
 void IMU_ISR(void) {
   IMU_stamp = nh.now();
   IMU_sampled = true;
 }
 
+/*Computes XOR checksum of NMEA sentence*/
 String checksum(String msg) {
   byte chksum = 0;
   int l = msg.length();
@@ -248,11 +252,11 @@ String checksum(String msg) {
 }
 
 void enableTriggers() {
-  nh.loginfo("Enabling triggers");
+  nh.loginfo("Enabling triggers.");
   analogWrite(CAM1_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
   analogWrite(CAM2_OUT, 5);
   analogWrite(CAM3_OUT, 5);
   analogWrite(CAM4_OUT, 5);
   digitalWrite(IMU_START, HIGH);
-  nh.loginfo("triggers enabled");
+  nh.loginfo("Triggers enabled.");
 }
