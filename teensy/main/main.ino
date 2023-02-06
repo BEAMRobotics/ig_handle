@@ -130,7 +130,7 @@ void loop() {
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
     GPSERIAL.print(nmea_string);
     sendNMEA = false;
-    digitalWriteFast(PPS_PIN,LOW);  // minimum pulse duration required by LiDAR is 10 us    
+    digitalWriteFast(PPS_PIN, LOW);  // minimum pulse duration required by LiDAR is 10 us    
   }
   
   if (F1_closed == true) {
@@ -158,7 +158,7 @@ void loop() {
     time_msg.time_ref = IMU_stamp;
     IMU_time.publish(&time_msg);
   }
-  
+
   nh.spinOnce();
 }
 
