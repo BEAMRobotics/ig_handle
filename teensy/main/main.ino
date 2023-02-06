@@ -184,8 +184,8 @@ void cam1_ISR(void) {
     F1_close_stamp = nh.now();
     F1_closed = true; 
     cam1_capture = true;  
-  }
-  else
+  } 
+  else if(!digitalRead(CAM1_IN))
   {
     cam1_capture = false; 
   }
@@ -198,7 +198,7 @@ void cam2_ISR(void) {
     F2_closed = true; 
     cam2_capture = true;   
   }
-  else
+  else if(!digitalRead(CAM2_IN))
   {
     cam2_capture = false;
   }  
@@ -211,7 +211,7 @@ void cam3_ISR(void) {
     F3_closed = true;
     cam3_capture = true;
   }
-  else
+  else if(!digitalRead(CAM3_IN))
   {
     cam3_capture = false;
   } 
@@ -224,7 +224,7 @@ void cam4_ISR(void) {
     F4_closed = true;
     cam4_capture = true;
   }
-  else
+  else if(!digitalRead(CAM4_IN))
   {
     cam4_capture = false;
   }  
