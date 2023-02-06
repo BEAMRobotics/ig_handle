@@ -2,11 +2,11 @@
 #include <sensor_msgs/TimeReference.h>
 #include <TimeLib.h>
 
-#define GPSERIAL Serial1 // $GPRMC
 #define USE_USBCON
 
 // Electrical component pin numbers
-#define PPS_PIN 7   
+#define GPSERIAL Serial1 // $GPRMC
+#define PPS_PIN 7   // PPS
 #define IMU_IN 8    // IMU_SyncIn
 #define CAM1_OUT 3  // Cam1_Trig
 #define CAM2_OUT 4  // Cam2_Trig
@@ -18,11 +18,10 @@
 #define CAM4_IN 24  // Cam4_Exp
 #define IMU_START 9 // IMU_SyncOut
 
-/* ROS node handler */
+// ROS node handler
 ros::NodeHandle nh;
-/* Trigger variables for camera and imu*/
-volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
-              F3_closed = false, F4_closed = false, IMU_sampled = false; 
+
+// Trigger variables for camera and imu
 sensor_msgs::TimeReference time_msg;
 ros::Publisher F1_time("/F1/cam_time", &time_msg);
 ros::Publisher F2_time("/F2/cam_time", &time_msg);
@@ -30,10 +29,11 @@ ros::Publisher F3_time("/F3/cam_time", &time_msg);
 ros::Publisher F4_time("/F4/cam_time", &time_msg);
 ros::Publisher IMU_time("/imu/imu_time", &time_msg);
 IntervalTimer teensy_clock;
-
 ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp, IMU_stamp;
+volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
+              F3_closed = false, F4_closed = false, IMU_sampled = false; 
 
-///* Forward function declarations */
+// Forward function declarations
 void cam1_ISR(void);
 void cam2_ISR(void);
 void cam3_ISR(void);
@@ -62,8 +62,9 @@ void setup() {
    *  - PPS but don't start it yet
    *  - Attach
    */
-
-  pinMode(PPS_PIN, OUTPUT);  // pin 5 is still driven by default but has a 50% duty cycle
+  pinMode(PPS_PIN, OUTPUT);  // 50% duty cycle
+  
+  // begin clock
   teensy_clock.begin(setSendNMEA_ISR,1000000); // call setSendNMEA_ISR every 10^6 microseconds
     
   // node initialization
@@ -74,26 +75,27 @@ void setup() {
   nh.advertise(F4_time);
   nh.advertise(IMU_time);
 
- /* configure input pins */
+  // configure input pins
   pinMode(CAM1_IN, INPUT_PULLDOWN);
   pinMode(CAM2_IN, INPUT_PULLDOWN);
   pinMode(CAM3_IN, INPUT_PULLDOWN);
   pinMode(CAM4_IN, INPUT_PULLDOWN);
-  pinMode(IMU_IN,  INPUT_PULLUP);
+  pinMode(IMU_IN, INPUT_PULLUP);
 
-  /* enable interrupts */
+  // enable interrupts
   attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
 
-  /* set up the camera triggers but don't start them yet either */
+  // set up the camera triggers but don't start them yet either
   analogWriteFrequency(CAM1_OUT, 20.0);  // 20.0 Hz base frequency for the PWM signal
   analogWriteFrequency(CAM2_OUT, 20.0);  // We're using a PWM signal because it's a way of offloading
   analogWriteFrequency(CAM3_OUT, 20.0);  // the task to free up the main loop
   analogWriteFrequency(CAM4_OUT, 20.0);
-  /* setup IMU_START ping as output */
+  
+  // setup IMU_START ping as output
   pinMode(IMU_START, OUTPUT);
   digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
   
@@ -103,9 +105,9 @@ void setup() {
   while (!nh.connected()) {
     nh.spinOnce(); 
   }
-  
-  /* start sampling */
   nh.loginfo("Setup complete.");
+  
+  // start sampling
   enableTriggers();
 }
 
@@ -134,7 +136,7 @@ void loop() {
   if (F1_closed == true) {
     F1_closed = false;
     time_msg.time_ref = F1_close_stamp;
-    F1_time.publish(&time_msg);    
+    F1_time.publish(&time_msg);
   }
   if (F2_closed == true) {
     F2_closed = false;
@@ -163,8 +165,10 @@ void loop() {
 /***********************************************
  *            Helper functions                 *
  ***********************************************/
+
+// Send NMEA interrupt
 void setSendNMEA_ISR(void) {
-  /*  It's not really recommended to write to pins from an interrupt as it can
+  /* It's not really recommended to write to pins from an interrupt as it can
    * take a relatively long time to execute. However, one of the main purposes
    * of this code is to output accurate PPS signal and this is the most accurate
    * way that abides by the format constraints on the signal.
@@ -179,7 +183,7 @@ void cam1_ISR(void) {
   {
     F1_close_stamp = nh.now();
     F1_closed = true; 
-    cam1_capture = true;   
+    cam1_capture = true;  
   }
   else
   {
@@ -188,7 +192,6 @@ void cam1_ISR(void) {
 }
 
 void cam2_ISR(void) {
-  
   if (digitalRead(CAM2_IN) && !cam2_capture)
   {
     F2_close_stamp = nh.now();
@@ -202,7 +205,7 @@ void cam2_ISR(void) {
 }
 
 void cam3_ISR(void) {
-  if(digitalRead(CAM3_IN)&& !cam3_capture)
+  if(digitalRead(CAM3_IN) && !cam3_capture)
   {
     F3_close_stamp = nh.now();
     F3_closed = true;
@@ -232,7 +235,7 @@ void IMU_ISR(void) {
   IMU_sampled = true;
 }
 
-/*Computes XOR checksum of NMEA sentence*/
+// Computes XOR checksum of NMEA sentence
 String checksum(String msg) {
   byte chksum = 0;
   int l = msg.length();
