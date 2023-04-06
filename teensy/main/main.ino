@@ -81,7 +81,7 @@ void setup() {
   pinMode(CAM3_IN, INPUT_PULLDOWN);
   pinMode(CAM4_IN, INPUT_PULLDOWN);
   pinMode(IMU_IN, INPUT_PULLUP);
-
+                                   
   // enable interrupts
   attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
@@ -131,6 +131,7 @@ void loop() {
     GPSERIAL.print(nmea_string);
     sendNMEA = false;
     digitalWriteFast(PPS_PIN, LOW);  // minimum pulse duration required by LiDAR is 10 us    
+    //nh.loginfo(nmea_string.c_str());
   }
   
   if (F1_closed == true) {
@@ -178,14 +179,14 @@ void setSendNMEA_ISR(void) {
 }
 
 // Timestamp creation interrupts
-void cam1_ISR(void) {  
+void cam1_ISR(void) {
   if (digitalRead(CAM1_IN) && !cam1_capture)
   {
     F1_close_stamp = nh.now();
-    F1_closed = true; 
-    cam1_capture = true;  
-  } 
-  else if(!digitalRead(CAM1_IN))
+    F1_closed = true;
+    cam1_capture = true;    
+  }
+  else if (!digitalRead(CAM1_IN))
   {
     cam1_capture = false; 
   }
@@ -198,33 +199,33 @@ void cam2_ISR(void) {
     F2_closed = true; 
     cam2_capture = true;   
   }
-  else if(!digitalRead(CAM2_IN))
+  else if (!digitalRead(CAM2_IN))
   {
     cam2_capture = false;
   }  
 }
 
 void cam3_ISR(void) {
-  if(digitalRead(CAM3_IN) && !cam3_capture)
+  if (digitalRead(CAM3_IN) && !cam3_capture)
   {
     F3_close_stamp = nh.now();
     F3_closed = true;
     cam3_capture = true;
   }
-  else if(!digitalRead(CAM3_IN))
+  else if (!digitalRead(CAM3_IN))
   {
     cam3_capture = false;
   } 
 }
 
 void cam4_ISR(void) {
-  if(digitalRead(CAM4_IN) && !cam4_capture)
+  if (digitalRead(CAM4_IN) && !cam4_capture)
   {
     F4_close_stamp = nh.now();
     F4_closed = true;
     cam4_capture = true;
   }
-  else if(!digitalRead(CAM4_IN))
+  else if (!digitalRead(CAM4_IN))
   {
     cam4_capture = false;
   }  
