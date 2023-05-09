@@ -6,17 +6,14 @@
 
 // Electrical component pin numbers
 #define GPSERIAL Serial1 // $GPRMC
-#define PPS_PIN 7   // PPS
-#define IMU_IN 8    // IMU_SyncIn
-#define CAM1_OUT 3  // Cam1_Trig
-#define CAM2_OUT 4  // Cam2_Trig
-#define CAM3_OUT 11 // Cam3_Trig
-#define CAM4_OUT 10 // Cam4_Trig
-#define CAM1_IN 5   // Cam1_Exp
-#define CAM2_IN 6   // Cam2_Exp
-#define CAM3_IN 27  // Cam3_Exp
-#define CAM4_IN 24  // Cam4_Exp
-#define IMU_START 9 // IMU_SyncOut
+#define PPS_PIN 2        // PPS
+#define CAM_OUT 3       // Cam_Trig
+#define CAM1_IN 4       // Cam1_Exp
+#define CAM2_IN 5       // Cam2_Exp
+#define CAM4_IN 6       // Cam4_Exp
+#define CAM3_IN 7       // Cam3_Exp
+#define IMU_IN 8        // IMU_SyncIn
+#define IMU_START 9     // IMU_SyncOut
 
 // ROS node handler
 ros::NodeHandle nh;
@@ -40,28 +37,23 @@ void cam3_ISR(void);
 void cam4_ISR(void);
 void IMU_ISR(void);
 void setSendNMEA(void);
-void enableTriggers();
 String checksum(String msg);
-
-// Booleans to ensure synchronized camera capture
-bool cam1_capture = false;
-bool cam2_capture = false;
-bool cam3_capture = false;
-bool cam4_capture = false;
 
 /*
  * Initial setup for the arduino sketch
- * This function performs:
- *  - Configure timers for LiDAR and camera triggering
- *  - Advertisement and subscribing to ROS topics
+ * This function:
+ *  - Configures timers for LiDAR and camera triggering
+ *  - Advertises and subscribes to ROS topics
  *  - UART Serial setup for NMEA strings
  *  - Holds until rosserial is connected
  */
-void setup() {  
-  /* Setup outputs to LiDAR
+void setup() {
+  /* Setup input/outputs to LiDAR
+   *  - Set baud rate for GPSERIAL
    *  - PPS but don't start it yet
    *  - Attach
    */
+  Serial1.begin(57600);
   pinMode(PPS_PIN, OUTPUT);  // 50% duty cycle
   
   // begin clock
@@ -76,11 +68,11 @@ void setup() {
   nh.advertise(IMU_time);
 
   // configure input pins
-  pinMode(CAM1_IN, INPUT_PULLDOWN);
-  pinMode(CAM2_IN, INPUT_PULLDOWN);
-  pinMode(CAM3_IN, INPUT_PULLDOWN);
-  pinMode(CAM4_IN, INPUT_PULLDOWN);
-  pinMode(IMU_IN, INPUT_PULLUP);
+  pinMode(CAM1_IN, INPUT_PULLUP);
+  pinMode(CAM2_IN, INPUT_PULLUP);
+  pinMode(CAM3_IN, INPUT_PULLUP);
+  pinMode(CAM4_IN, INPUT_PULLUP);
+  pinMode(IMU_IN, INPUT);
                                    
   // enable interrupts
   attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
@@ -90,32 +82,33 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
 
   // set up the camera triggers but don't start them yet either
-  analogWriteFrequency(CAM1_OUT, 20.0);  // 20.0 Hz base frequency for the PWM signal
-  analogWriteFrequency(CAM2_OUT, 20.0);  // We're using a PWM signal because it's a way of offloading
-  analogWriteFrequency(CAM3_OUT, 20.0);  // the task to free up the main loop
-  analogWriteFrequency(CAM4_OUT, 20.0);
-  
+  // Note: We're using a PWM signal because it's a way of offloading
+  //       the task to free up the main loop. The base frequency for 
+  //       the PWM signal is 20.0 Hz
+  pinMode(CAM_OUT, OUTPUT);
+  analogWriteFrequency(CAM_OUT, 20.0);
+
   // setup IMU_START ping as output
   pinMode(IMU_START, OUTPUT);
   digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
   
-  // nh.loginfo(nmea_string.c_str());
-
-  // await nodehandle time sync
+  // await node handle time sync
   while (!nh.connected()) {
     nh.spinOnce(); 
   }
-  nh.loginfo("Setup complete.");
-  
-  // start sampling
-  enableTriggers();
+  nh.loginfo("Setup complete, Enabling triggers.");
+  analogWrite(CAM_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
+  digitalWrite(IMU_START, HIGH);
+  nh.loginfo("Triggers enabled.");
 }
 
 /*
- * Continously looping function performs the following:
- *  - Triggering camera line at certain frequency and publishes the timestamp to
- * /cam_time
- *  - Trigger lidar line (PPS) and transmits NMEA string over Serial1
+ * Main loop
+ * This function:
+ *  - Publishes set-up time of teen2023_05_09_09_56_17sy
+ *  - Triggers lidar line (PPS) and transmits NMEA string over Serial1
+ *  - Triggers camera line at certain frequency and publishes the timestamp to /cam_time
+ *  - Publishes the timestamp of IMU capture to /imu_time
  */
 void loop() {
   if (sendNMEA == true) {
@@ -163,10 +156,6 @@ void loop() {
   nh.spinOnce();
 }
 
-/***********************************************
- *            Helper functions                 *
- ***********************************************/
-
 // Send NMEA interrupt
 void setSendNMEA_ISR(void) {
   /* It's not really recommended to write to pins from an interrupt as it can
@@ -180,55 +169,23 @@ void setSendNMEA_ISR(void) {
 
 // Timestamp creation interrupts
 void cam1_ISR(void) {
-  if (digitalRead(CAM1_IN) && !cam1_capture)
-  {
-    F1_close_stamp = nh.now();
-    F1_closed = true;
-    cam1_capture = true;    
-  }
-  else if (!digitalRead(CAM1_IN))
-  {
-    cam1_capture = false; 
-  }
+  F1_close_stamp = nh.now();
+  F1_closed = true;
 }
 
 void cam2_ISR(void) {
-  if (digitalRead(CAM2_IN) && !cam2_capture)
-  {
-    F2_close_stamp = nh.now();
-    F2_closed = true; 
-    cam2_capture = true;   
-  }
-  else if (!digitalRead(CAM2_IN))
-  {
-    cam2_capture = false;
-  }  
+  F2_close_stamp = nh.now();
+  F2_closed = true; 
 }
 
 void cam3_ISR(void) {
-  if (digitalRead(CAM3_IN) && !cam3_capture)
-  {
-    F3_close_stamp = nh.now();
-    F3_closed = true;
-    cam3_capture = true;
-  }
-  else if (!digitalRead(CAM3_IN))
-  {
-    cam3_capture = false;
-  } 
+  F3_close_stamp = nh.now();
+  F3_closed = true;
 }
 
 void cam4_ISR(void) {
-  if (digitalRead(CAM4_IN) && !cam4_capture)
-  {
-    F4_close_stamp = nh.now();
-    F4_closed = true;
-    cam4_capture = true;
-  }
-  else if (!digitalRead(CAM4_IN))
-  {
-    cam4_capture = false;
-  }  
+  F4_close_stamp = nh.now();
+  F4_closed = true;
 }
 
 void IMU_ISR(void) {
@@ -250,14 +207,4 @@ String checksum(String msg) {
     result = "0" + result;
   }
   return result;
-}
-
-void enableTriggers() {
-  nh.loginfo("Enabling triggers.");
-  analogWrite(CAM1_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
-  analogWrite(CAM2_OUT, 5);
-  analogWrite(CAM3_OUT, 5);
-  analogWrite(CAM4_OUT, 5);
-  digitalWrite(IMU_START, HIGH);
-  nh.loginfo("Triggers enabled.");
 }
