@@ -2,9 +2,12 @@ network:
   version: 2
   renderer: networkd
   ethernets:
-    eno1:
-      dhcp4: no
-      addresses: [ 192.168.1.150/24, 192.168.0.4/24 ]
-        gateway4: 192.168.1.1
+    enp2s0:
+      addresses:
+        - 192.168.1.150/24
+        - 192.168.0.4/24
+      routes:
+        - to: default
+          via: 10.10.10.1
       nameservers:
-        addresses: [8.8.8.8, 1.1.1.1]
+          addresses: [8.8.8.1, 1.1.1.1]
