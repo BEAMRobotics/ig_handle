@@ -7,13 +7,13 @@
 // Electrical component pin numbers
 #define GPSERIAL Serial1 // $GPRMC
 #define PPS_PIN 2        // PPS
-#define CAM_OUT 3       // Cam_Trig
-#define CAM1_IN 4       // Cam1_Exp
-#define CAM2_IN 5       // Cam2_Exp
-#define CAM4_IN 6       // Cam4_Exp
-#define CAM3_IN 7       // Cam3_Exp
-#define IMU_IN 8        // IMU_SyncIn
-#define IMU_START 9     // IMU_SyncOut
+#define CAM_OUT 3        // Cam_Trig
+#define CAM1_IN 4        // Cam1_Exp
+#define CAM2_IN 5        // Cam2_Exp
+#define CAM4_IN 6        // Cam4_Exp
+#define CAM3_IN 7        // Cam3_Exp
+#define IMU_IN 8         // IMU_SyncIn
+#define IMU_START 9      // IMU_SyncOut
 
 // ROS node handler
 ros::NodeHandle nh;
@@ -105,7 +105,7 @@ void setup() {
 /*
  * Main loop
  * This function:
- *  - Publishes set-up time of teen2023_05_09_09_56_17sy
+ *  - Publishes set-up time of teensy
  *  - Triggers lidar line (PPS) and transmits NMEA string over Serial1
  *  - Triggers camera line at certain frequency and publishes the timestamp to /cam_time
  *  - Publishes the timestamp of IMU capture to /imu_time
