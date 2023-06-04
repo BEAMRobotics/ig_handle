@@ -8,10 +8,7 @@
 #define GPSERIAL Serial1  // $GPRMC
 #define PPS_PIN 2         // PPS
 #define CAM_OUT 3         // Cam_Trig
-#define CAM1_IN 4         // Cam1_Exp
-#define CAM2_IN 5         // Cam2_Exp
-#define CAM4_IN 6         // Cam4_Exp
-#define CAM3_IN 7         // Cam3_Exp
+#define CAM_IN 4          // Cam_Exp
 #define IMU_IN 8          // IMU_SyncIn
 #define IMU_START 9       // IMU_SyncOut
 
@@ -20,22 +17,14 @@ ros::NodeHandle nh;
 
 // Trigger variables for camera and imu
 sensor_msgs::TimeReference time_msg;
-ros::Publisher F1_time("/F1/cam_time", &time_msg);
-ros::Publisher F2_time("/F2/cam_time", &time_msg);
-ros::Publisher F3_time("/F3/cam_time", &time_msg);
-ros::Publisher F4_time("/F4/cam_time", &time_msg);
+ros::Publisher CAM_time("/cam/cam_time", &time_msg);
 ros::Publisher IMU_time("/imu/imu_time", &time_msg);
 IntervalTimer teensy_clock;
-ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp,
-    IMU_stamp;
-volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
-              F3_closed = false, F4_closed = false, IMU_sampled = false;
+ros::Time CAM_close_stamp, IMU_stamp;
+volatile bool sendNMEA = false, CAM_closed = false, IMU_sampled = false;
 
 // Forward function declarations
-void cam1_ISR(void);
-void cam2_ISR(void);
-void cam3_ISR(void);
-void cam4_ISR(void);
+void CAM_ISR(void);
 void IMU_ISR(void);
 void setSendNMEA(void);
 String checksum(String msg);
@@ -62,24 +51,15 @@ void setup() {
 
   // node initialization
   nh.initNode();
-  nh.advertise(F1_time);
-  nh.advertise(F2_time);
-  nh.advertise(F3_time);
-  nh.advertise(F4_time);
+  nh.advertise(CAM_time);
   nh.advertise(IMU_time);
 
   // configure input pins
-  pinMode(CAM1_IN, INPUT_PULLUP);
-  pinMode(CAM2_IN, INPUT_PULLUP);
-  pinMode(CAM3_IN, INPUT_PULLUP);
-  pinMode(CAM4_IN, INPUT_PULLUP);
+  pinMode(CAM_IN, INPUT_PULLUP);
   pinMode(IMU_IN, INPUT);
 
   // enable interrupts
-  attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM3_IN), cam3_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(CAM4_IN), cam4_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM_IN), CAM_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
 
   // set up the camera triggers but don't start them yet either
@@ -137,25 +117,10 @@ void loop() {
     // nh.loginfo(nmea_string.c_str());
   }
 
-  if (F1_closed == true) {
-    F1_closed = false;
-    time_msg.time_ref = F1_close_stamp;
-    F1_time.publish(&time_msg);
-  }
-  if (F2_closed == true) {
-    F2_closed = false;
-    time_msg.time_ref = F2_close_stamp;
-    F2_time.publish(&time_msg);
-  }
-  if (F3_closed == true) {
-    F3_closed = false;
-    time_msg.time_ref = F3_close_stamp;
-    F3_time.publish(&time_msg);
-  }
-  if (F4_closed == true) {
-    F4_closed = false;
-    time_msg.time_ref = F4_close_stamp;
-    F4_time.publish(&time_msg);
+  if (CAM_closed == true) {
+    CAM_closed = false;
+    time_msg.time_ref = CAM_close_stamp;
+    CAM_time.publish(&time_msg);
   }
   if (IMU_sampled == true) {
     IMU_sampled = false;
@@ -178,24 +143,9 @@ void setSendNMEA_ISR(void) {
 }
 
 // Timestamp creation interrupts
-void cam1_ISR(void) {
-  F1_close_stamp = nh.now();
-  F1_closed = true;
-}
-
-void cam2_ISR(void) {
-  F2_close_stamp = nh.now();
-  F2_closed = true;
-}
-
-void cam3_ISR(void) {
-  F3_close_stamp = nh.now();
-  F3_closed = true;
-}
-
-void cam4_ISR(void) {
-  F4_close_stamp = nh.now();
-  F4_closed = true;
+void CAM_ISR(void) {
+  CAM_close_stamp = nh.now();
+  CAM_closed = true;
 }
 
 void IMU_ISR(void) {

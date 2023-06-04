@@ -24,7 +24,7 @@ def restamp(bag, outbag, data_topics, time_topics):
             except:
                 print("Can't stamp " + topic + " seq " + str(msg.header.seq) + ": ran out of timestamps.")
                 continue
-        
+
             msg.header.stamp = time_msg.time_ref
             outbag.write(topic, msg, time_msg.time_ref)
 
@@ -33,7 +33,7 @@ def restamp(bag, outbag, data_topics, time_topics):
             outbag.write(topic, msg, t)
 
     return outbag
-    
+
 def main(args):
     parser = argparse.ArgumentParser(
         description='This script is used to post-process a raw bag from ig2. Currently, this only restamps topics with their appropriate reference times.')
@@ -42,7 +42,7 @@ def main(args):
     parser.add_argument(
         '-d', '--data_topics', nargs='+', help='whitespace separated list of sensor message topics', default=["/imu/data", "/F1/image_raw", "/F2/image_raw", "/F3/image_raw", "/F4/image_raw"])
     parser.add_argument(
-        '-t', '--time_topics', nargs='+', help='whitespace separated list of time reference topics', default=["/imu/imu_time", "/F1/cam_time", "/F2/cam_time", "/F3/cam_time", "/F4/cam_time"])
+        '-t', '--time_topics', nargs='+', help='whitespace separated list of time reference topics', default=["/imu/imu_time", "/cam/cam_time", "/cam/cam_time", "/cam/cam_time", "/cam/cam_time"])
 
     args = parser.parse_args()
 
@@ -53,10 +53,10 @@ def main(args):
 
     time_topics = args.time_topics
     data_topics = args.data_topics
-    
+
     # pair and restamp data/time message couples
     outbag = restamp(bag, outbag, data_topics, time_topics)
-    
+
     outbag.close()
 
 
