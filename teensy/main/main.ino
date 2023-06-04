@@ -5,15 +5,15 @@
 #define USE_USBCON
 
 // Electrical component pin numbers
-#define GPSERIAL Serial1 // $GPRMC
-#define PPS_PIN 2        // PPS
-#define CAM_OUT 3        // Cam_Trig
-#define CAM1_IN 4        // Cam1_Exp
-#define CAM2_IN 5        // Cam2_Exp
-#define CAM4_IN 6        // Cam4_Exp
-#define CAM3_IN 7        // Cam3_Exp
-#define IMU_IN 8         // IMU_SyncIn
-#define IMU_START 9      // IMU_SyncOut
+#define GPSERIAL Serial1  // $GPRMC
+#define PPS_PIN 2         // PPS
+#define CAM_OUT 3         // Cam_Trig
+#define CAM1_IN 4         // Cam1_Exp
+#define CAM2_IN 5         // Cam2_Exp
+#define CAM4_IN 6         // Cam4_Exp
+#define CAM3_IN 7         // Cam3_Exp
+#define IMU_IN 8          // IMU_SyncIn
+#define IMU_START 9       // IMU_SyncOut
 
 // ROS node handler
 ros::NodeHandle nh;
@@ -26,9 +26,10 @@ ros::Publisher F3_time("/F3/cam_time", &time_msg);
 ros::Publisher F4_time("/F4/cam_time", &time_msg);
 ros::Publisher IMU_time("/imu/imu_time", &time_msg);
 IntervalTimer teensy_clock;
-ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp, IMU_stamp;
+ros::Time F1_close_stamp, F2_close_stamp, F3_close_stamp, F4_close_stamp,
+    IMU_stamp;
 volatile bool sendNMEA = false, F1_closed = false, F2_closed = false,
-              F3_closed = false, F4_closed = false, IMU_sampled = false; 
+              F3_closed = false, F4_closed = false, IMU_sampled = false;
 
 // Forward function declarations
 void cam1_ISR(void);
@@ -55,10 +56,10 @@ void setup() {
    */
   Serial1.begin(57600);
   pinMode(PPS_PIN, OUTPUT);  // 50% duty cycle
-  
-  // begin clock
-  teensy_clock.begin(setSendNMEA_ISR,1000000); // call setSendNMEA_ISR every 10^6 microseconds
-    
+
+  // begin clock and call setSendNMEA_ISR every 10^6 microseconds
+  teensy_clock.begin(setSendNMEA_ISR, 1000000);
+
   // node initialization
   nh.initNode();
   nh.advertise(F1_time);
@@ -73,7 +74,7 @@ void setup() {
   pinMode(CAM3_IN, INPUT_PULLUP);
   pinMode(CAM4_IN, INPUT_PULLUP);
   pinMode(IMU_IN, INPUT);
-                                   
+
   // enable interrupts
   attachInterrupt(digitalPinToInterrupt(CAM1_IN), cam1_ISR, RISING);
   attachInterrupt(digitalPinToInterrupt(CAM2_IN), cam2_ISR, RISING);
@@ -83,19 +84,23 @@ void setup() {
 
   // set up the camera triggers but don't start them yet either
   // Note: We're using a PWM signal because it's a way of offloading
-  //       the task to free up the main loop. The base frequency for 
+  //       the task to free up the main loop. The base frequency for
   //       the PWM signal is 20.0 Hz
   pinMode(CAM_OUT, OUTPUT);
   analogWriteFrequency(CAM_OUT, 20.0);
 
   // setup IMU_START ping as output
   pinMode(IMU_START, OUTPUT);
-  digitalWrite(IMU_START, LOW); // make sure that the pin is low before we send a rising edge
-  
+
+  // ensure pin is low before we send a rising edge
+  digitalWrite(IMU_START, LOW);
+
   // await node handle time sync
   while (!nh.connected()) {
-    nh.spinOnce(); 
+    nh.spinOnce();
   }
+
+  // enable triggers
   nh.loginfo("Setup complete, Enabling triggers.");
   analogWrite(CAM_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
   digitalWrite(IMU_START, HIGH);
@@ -107,7 +112,8 @@ void setup() {
  * This function:
  *  - Publishes set-up time of teensy
  *  - Triggers lidar line (PPS) and transmits NMEA string over Serial1
- *  - Triggers camera line at certain frequency and publishes the timestamp to /cam_time
+ *  - Triggers camera line at certain frequency and publishes the timestamp to
+ * /cam_time
  *  - Publishes the timestamp of IMU capture to /imu_time
  */
 void loop() {
@@ -123,10 +129,14 @@ void loop() {
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
     GPSERIAL.print(nmea_string);
     sendNMEA = false;
-    digitalWriteFast(PPS_PIN, LOW);  // minimum pulse duration required by LiDAR is 10 us    
-    //nh.loginfo(nmea_string.c_str());
+
+    // minimum pulse duration required by LiDAR is 10 us
+    digitalWriteFast(PPS_PIN, LOW);
+
+    // DEBUG NMEA
+    // nh.loginfo(nmea_string.c_str());
   }
-  
+
   if (F1_closed == true) {
     F1_closed = false;
     time_msg.time_ref = F1_close_stamp;
@@ -175,7 +185,7 @@ void cam1_ISR(void) {
 
 void cam2_ISR(void) {
   F2_close_stamp = nh.now();
-  F2_closed = true; 
+  F2_closed = true;
 }
 
 void cam3_ISR(void) {
@@ -200,7 +210,7 @@ String checksum(String msg) {
   for (int i = 0; i < l; i++) {
     chksum ^= msg[i];
   }
-  
+
   String result = String(chksum, HEX);
   result.toUpperCase();
   if (result.length() < 2) {
