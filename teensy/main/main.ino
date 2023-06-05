@@ -16,9 +16,10 @@
 ros::NodeHandle nh;
 
 // Trigger variables for camera and imu
-sensor_msgs::TimeReference time_msg;
-ros::Publisher CAM_time("/cam/cam_time", &time_msg);
-ros::Publisher IMU_time("/imu/imu_time", &time_msg);
+sensor_msgs::TimeReference cam_time_msg;
+sensor_msgs::TimeReference imu_time_msg;
+ros::Publisher CAM_time("/cam/cam_time", &cam_time_msg);
+ros::Publisher IMU_time("/imu/imu_time", &imu_time_msg);
 IntervalTimer teensy_clock;
 ros::Time CAM_close_stamp, IMU_stamp;
 volatile bool sendNMEA = false, CAM_closed = false, IMU_sampled = false;
@@ -119,13 +120,13 @@ void loop() {
 
   if (CAM_closed == true) {
     CAM_closed = false;
-    time_msg.time_ref = CAM_close_stamp;
-    CAM_time.publish(&time_msg);
+    cam_time_msg.time_ref = CAM_close_stamp;
+    CAM_time.publish(&cam_time_msg);
   }
   if (IMU_sampled == true) {
     IMU_sampled = false;
-    time_msg.time_ref = IMU_stamp;
-    IMU_time.publish(&time_msg);
+    imu_time_msg.time_ref = IMU_stamp;
+    IMU_time.publish(&imu_time_msg);
   }
 
   nh.spinOnce();
