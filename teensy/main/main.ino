@@ -91,7 +91,6 @@ void setup() {
 /*
  * Main loop
  * This function:
- *  - Publishes set-up time of teensy
  *  - Triggers lidar line (PPS) and transmits NMEA string over Serial1
  *  - Triggers camera line at certain frequency and publishes the timestamp to
  * /cam_time
