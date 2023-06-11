@@ -64,11 +64,6 @@ The following two steps are to take the raw.bag to a bag ready for SLAM:
 python3 process_raw_bag.py -b [path_to_raw_bag] -d [list_of_data_topics] -t [list_of_time_reference_topics_respectively]
 ```
 
-```
-bash debayer.sh [path_to_bag] [raw_image_topic]
-bash downscale.sh [path_to_bag] [downscale_factor] [image_mono_topic]
-```
-
 ## Documentation
 
 ### ECAD
