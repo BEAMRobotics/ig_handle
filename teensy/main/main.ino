@@ -29,7 +29,7 @@ ros::Time CAM_stamp, IMU_stamp;
 volatile bool sendNMEA = false, CAM_closed = false, IMU_sampled = false;
 
 // Forward function declarations
-void setSendNMEA(void);
+void setSendNMEA_ISR(void);
 void CAM_ISR(void);
 void IMU_ISR(void);
 String checksum(String msg);
@@ -44,7 +44,7 @@ String checksum(String msg);
  */
 void setup() {
   // Setup input/outputs to LiDAR
-  GPSERIAL.begin(57600);     // Set baud rate for GPSERIAL
+  GPSERIAL.begin(9600);      // Set baud rate for GPSERIAL
   pinMode(PPS_PIN, OUTPUT);  // default 50% duty cycle
 
   // begin clock and call setSendNMEA_ISR every 10^6 microseconds
