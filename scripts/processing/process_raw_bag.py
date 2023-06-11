@@ -91,7 +91,7 @@ def main(args):
 
     parser.add_argument('-b', '--bag', help='input bag file', required=True)
     parser.add_argument(
-        '-d', '--data_topics', nargs='+', help='whitespace separated list of sensor message topics', default=["/imu/data", "/F1/image_raw", "/F2/image_raw", "/F3/image_raw", "/F4/image_raw"])
+        '-d', '--data_topics', nargs='+', help='whitespace separated list of sensor message topics', default=["/imu/data", "/F1/image_raw/compressed", "/F2/image_raw/compressed", "/F3/image_raw/compressed", "/F4/image_raw/compressed"])
     parser.add_argument(
         '-t', '--time_topics', nargs='+', help='whitespace separated list of time reference topics', default=["/imu/imu_time", "/cam/cam_time", "/cam/cam_time", "/cam/cam_time", "/cam/cam_time"])
 
