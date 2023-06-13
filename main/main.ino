@@ -43,12 +43,18 @@ String checksum(String msg);
  *  - Holds until rosserial is connected
  */
 void setup() {
-  // Setup input/outputs to LiDAR
-  GPSERIAL.begin(9600);      // Set baud rate for GPSERIAL
-  pinMode(PPS_PIN, OUTPUT);  // default 50% duty cycle
+  /* Lidar */
+
+  // set GPSERIAL baud rate and transmission inversion for RS-232 transmission
+  GPSERIAL.begin(9600, SERIAL_8N1_TXINV);
+
+  // set PPS pin
+  pinMode(PPS_PIN, OUTPUT);
 
   // begin clock and call setSendNMEA_ISR every 10^6 microseconds
   teensy_clock.begin(setSendNMEA_ISR, 1000000);
+
+  /* Camera and IMU */
 
   // node initialization
   nh.initNode();
