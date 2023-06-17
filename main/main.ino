@@ -4,35 +4,35 @@
 
 #define USE_USBCON
 
-// Electrical component pin numbers
+// electrical component pin numbers
 #define GPSERIAL Serial1  // GPRMC
 #define PPS_PIN 2         // PPS
 #define CAM_OUT 3         // Cam_Trig
 #define CAM_IN 4          // Cam_Exp
-#define IMU_IN 8          // IMU_SyncIn
-#define IMU_OUT 9         // IMU_SyncOut
+#define IMU_OUT 8         // IMU_SyncOut
+#define IMU_IN 9          // IMU_SyncIn
 
-// ROS node handler
+// ROS nodehandle
 ros::NodeHandle nh;
 
-// time-sync clock
+// microcontroller clock
 IntervalTimer teensy_clock;
 
-// time topics for camera and imu
+// messages and time topics for camera and imu
 sensor_msgs::TimeReference cam_time_msg;
 sensor_msgs::TimeReference imu_time_msg;
-ros::Publisher CAM_time("/cam/cam_time", &cam_time_msg);
-ros::Publisher IMU_time("/imu/imu_time", &imu_time_msg);
+ros::Publisher cam_time_pub("/cam/cam_time", &cam_time_msg);
+ros::Publisher imu_time_pub("/imu/imu_time", &imu_time_msg);
 
 // time-sync indicators
 elapsedMillis nmea_delay;
-ros::Time PPS_stamp, CAM_stamp, IMU_stamp;
-volatile bool sendNMEA = false, CAM_closed = false, IMU_sampled = false;
+ros::Time pps_stamp, cam_stamp, imu_stamp;
+volatile bool send_nmea = false, cam_closed = false, imu_sampled = false;
 
 // Forward function declarations
-void setSendNMEA_ISR(void);
-void CAM_ISR(void);
-void IMU_ISR(void);
+void lidarISR(void);
+void camISR(void);
+void imuISR(void);
 String checksum(String msg);
 void debugNMEA();
 
@@ -54,15 +54,15 @@ void setup() {
   // set PPS pin
   pinMode(PPS_PIN, OUTPUT);
 
-  // begin clock and call setSendNMEA_ISR every second
-  teensy_clock.begin(setSendNMEA_ISR, 1000000);
+  // begin clock and call lidarISR every second
+  teensy_clock.begin(lidarISR, 1000000);
 
   /* Camera and IMU */
 
   // node initialization
   nh.initNode();
-  nh.advertise(CAM_time);
-  nh.advertise(IMU_time);
+  nh.advertise(cam_time_pub);
+  nh.advertise(imu_time_pub);
 
   // configure input and out pins
   pinMode(CAM_IN, INPUT_PULLUP);
@@ -71,8 +71,8 @@ void setup() {
   pinMode(IMU_OUT, OUTPUT);
 
   // enable interrupts
-  attachInterrupt(digitalPinToInterrupt(CAM_IN), CAM_ISR, RISING);
-  attachInterrupt(digitalPinToInterrupt(IMU_IN), IMU_ISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM_IN), camISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(IMU_IN), imuISR, RISING);
 
   // Note: We're using a PWM signal because it's a way of offloading
   //       the task to free up the main loop. The base frequency for
@@ -103,11 +103,11 @@ void setup() {
  */
 void loop() {
   // ensure min 50 ms width between end of PPS and start of NMEA message
-  if (sendNMEA && nmea_delay >= 55) {
+  if (send_nmea && nmea_delay >= 55) {
     // get PPS time
-    time_t t_sec = PPS_stamp.sec;
-    time_t t_nsec = PPS_stamp.nsec;
-    int t_msec = round((float)t_nsec / 1000000);  // maintains msec precision
+    time_t t_sec = pps_stamp.sec;
+    time_t t_nsec = pps_stamp.nsec;
+    int t_msec = round((float)t_nsec / 1000000);  // maintain msec precision
 
     // create NMEA string
     char millisec_now[4], time_now[7], date_now[7];
@@ -127,34 +127,34 @@ void loop() {
     GPSERIAL.print(nmea_string);
 
     // reset send
-    sendNMEA = false;
+    send_nmea = false;
 
     // set PPS pin to low
     digitalWriteFast(PPS_PIN, LOW);
 
     // DEBUG NMEA
-    debugNMEA(nmea_string, t_sec, t_nsec);
+    // debugNMEA(nmea_string, t_sec, t_nsec);
   }
 
-  if (CAM_closed == true) {
-    CAM_closed = false;
-    cam_time_msg.time_ref = CAM_stamp;
-    CAM_time.publish(&cam_time_msg);
+  if (cam_closed == true) {
+    cam_closed = false;
+    cam_time_msg.time_ref = cam_stamp;
+    cam_time_pub.publish(&cam_time_msg);
   }
 
-  if (IMU_sampled == true) {
-    IMU_sampled = false;
-    imu_time_msg.time_ref = IMU_stamp;
-    IMU_time.publish(&imu_time_msg);
+  if (imu_sampled == true) {
+    imu_sampled = false;
+    imu_time_msg.time_ref = imu_stamp;
+    imu_time_pub.publish(&imu_time_msg);
   }
 
   nh.spinOnce();
 }
 
 // Send NMEA interrupt
-void setSendNMEA_ISR(void) {
+void lidarISR(void) {
   // get time of PPS
-  PPS_stamp = nh.now();
+  pps_stamp = nh.now();
 
   /* It's not really recommended to write to pins from an interrupt as it can
    * take a relatively long time to execute. However, one of the main purposes
@@ -166,19 +166,19 @@ void setSendNMEA_ISR(void) {
   digitalWriteFast(PPS_PIN, HIGH);
 
   // enable send and reset delay counter
-  sendNMEA = true;
+  send_nmea = true;
   nmea_delay = 0;
 }
 
 // Timestamp creation interrupts
-void CAM_ISR(void) {
-  CAM_stamp = nh.now();
-  CAM_closed = true;
+void camISR(void) {
+  cam_stamp = nh.now();
+  cam_closed = true;
 }
 
-void IMU_ISR(void) {
-  IMU_stamp = nh.now();
-  IMU_sampled = true;
+void imuISR(void) {
+  imu_stamp = nh.now();
+  imu_sampled = true;
 }
 
 // Computes XOR checksum of NMEA sentence
