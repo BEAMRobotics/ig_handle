@@ -107,10 +107,10 @@ void loop() {
     // get PPS time
     time_t t_sec = PPS_stamp.sec;
     time_t t_nsec = PPS_stamp.nsec;
-    int t_msec = round(t_nsec / 1000000);  // TODO: fix rounding
+    int t_msec = round((float)t_nsec / 1000000);  // maintains msec precision
 
     // create NMEA string
-    char millisec_now[9], time_now[7], date_now[7];
+    char millisec_now[4], time_now[7], date_now[7];
     sprintf(millisec_now, "%d", t_msec);
     sprintf(time_now, "%02i%02i%02i", hour(t_sec), minute(t_sec),
             second(t_sec));
@@ -197,6 +197,7 @@ String checksum(String msg) {
   return result;
 }
 
+// Debug NMEA message creation by comparing to ROS time
 void debugNMEA(String& nmea_string, time_t& t_sec, time_t& t_nsec) {
   // convert ros time to string
   char t_sec_string[10], t_nsec_string[9];
