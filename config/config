@@ -376,7 +376,7 @@
     use_custom_command = True
   [[hz_imu_time]]
     cursor_color = "#aaaaaa"
-    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /imu/imu_time"'
+    custom_command = 'bash -ic "sleep 2 && rostopic hz -w10 /imu/time"'
     exit_action = hold
     use_custom_command = True
   [[hz_lidar_h]]

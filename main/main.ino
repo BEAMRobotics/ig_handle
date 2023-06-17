@@ -21,8 +21,8 @@ IntervalTimer teensy_clock;
 // messages and time topics for camera and imu
 sensor_msgs::TimeReference cam_time_msg;
 sensor_msgs::TimeReference imu_time_msg;
-ros::Publisher cam_time_pub("/cam/cam_time", &cam_time_msg);
-ros::Publisher imu_time_pub("/imu/imu_time", &imu_time_msg);
+ros::Publisher cam_time_pub("/cam/time", &cam_time_msg);
+ros::Publisher imu_time_pub("/imu/time", &imu_time_msg);
 
 // time-sync indicators
 elapsedMillis nmea_delay;

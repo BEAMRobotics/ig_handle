@@ -13,7 +13,7 @@ rosbag record -O $bagDir/raw.bag \
   /F2/image_raw/compressed \
   /F3/image_raw/compressed \
   /F4/image_raw/compressed \
-  /cam/cam_time \
+  /cam/time \
   /lidar_h/velodyne_packets \
   /lidar_h/velodyne_points \
   /lidar_v/velodyne_packets \

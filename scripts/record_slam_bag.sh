@@ -11,9 +11,9 @@ echo "$bagDir/raw.bag"
 rosbag record -O $bagDir/raw.bag \
   /F1/image_raw/compressed \
   /F2/image_raw/compressed \
-  /cam/cam_time \
+  /cam/time \
   /imu/data \
-  /imu/imu_time \
+  /imu/time \
   /lidar_h/velodyne_packets \
   /lidar_h/velodyne_points \
   /lidar_v/velodyne_packets \
