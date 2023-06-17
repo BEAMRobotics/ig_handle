@@ -25,7 +25,8 @@ ros::Publisher CAM_time("/cam/cam_time", &cam_time_msg);
 ros::Publisher IMU_time("/imu/imu_time", &imu_time_msg);
 
 // time-sync indicators
-ros::Time CAM_stamp, IMU_stamp;
+elapsedMillis nmea_delay;
+ros::Time PPS_stamp, CAM_stamp, IMU_stamp;
 volatile bool sendNMEA = false, CAM_closed = false, IMU_sampled = false;
 
 // Forward function declarations
@@ -33,6 +34,7 @@ void setSendNMEA_ISR(void);
 void CAM_ISR(void);
 void IMU_ISR(void);
 String checksum(String msg);
+void debugNMEA();
 
 /*
  * Initial setup for the arduino sketch
@@ -45,13 +47,14 @@ String checksum(String msg);
 void setup() {
   /* Lidar */
 
-  // set GPSERIAL baud rate and transmission inversion for RS-232 transmission
+  // set GPSERIAL baud rate and transmission inversion for TTL RS-232
+  // transmission
   GPSERIAL.begin(9600, SERIAL_8N1_TXINV);
 
   // set PPS pin
   pinMode(PPS_PIN, OUTPUT);
 
-  // begin clock and call setSendNMEA_ISR every 10^6 microseconds
+  // begin clock and call setSendNMEA_ISR every second
   teensy_clock.begin(setSendNMEA_ISR, 1000000);
 
   /* Camera and IMU */
@@ -99,24 +102,38 @@ void setup() {
  *  - Publishes the timestamp of IMU capture to /imu_time
  */
 void loop() {
-  if (sendNMEA == true) {
-    char time_now[7], date_now[7];
-    time_t t = nh.now().sec;
-    sprintf(time_now, "%02i%02i%02i", hour(t), minute(t), second(t));
-    sprintf(date_now, "%02i%02i%02i", day(t), month(t), year(t) % 100);
-    String nmea_string = F("GPRMC,") + String(time_now) +
+  // ensure min 50 ms width between end of PPS and start of NMEA message
+  if (sendNMEA && nmea_delay >= 55) {
+    // get PPS time
+    time_t t_sec = PPS_stamp.sec;
+    time_t t_nsec = PPS_stamp.nsec;
+    int t_msec = round(t_nsec / 1000000);  // TODO: fix rounding
+
+    // create NMEA string
+    char millisec_now[9], time_now[7], date_now[7];
+    sprintf(millisec_now, "%d", t_msec);
+    sprintf(time_now, "%02i%02i%02i", hour(t_sec), minute(t_sec),
+            second(t_sec));
+    sprintf(date_now, "%02i%02i%02i", day(t_sec), month(t_sec),
+            year(t_sec) % 100);
+    String nmea_string = F("GPRMC,") + String(time_now) + "." +
+                         String(millisec_now) +
                          F(",A,4365.107,N,79347.702,E,022.4,084.4,") +
                          String(date_now) + ",003.1,W";
     String chk = checksum(nmea_string);
     nmea_string = "$" + nmea_string + "*" + chk + "\n";
+
+    // print NMEA string to serial as an NMEA message
     GPSERIAL.print(nmea_string);
+
+    // reset send
     sendNMEA = false;
 
-    // minimum pulse duration required by LiDAR is 10 us
+    // set PPS pin to low
     digitalWriteFast(PPS_PIN, LOW);
 
     // DEBUG NMEA
-    // nh.loginfo(nmea_string.c_str());
+    debugNMEA(nmea_string, t_sec, t_nsec);
   }
 
   if (CAM_closed == true) {
@@ -136,13 +153,21 @@ void loop() {
 
 // Send NMEA interrupt
 void setSendNMEA_ISR(void) {
+  // get time of PPS
+  PPS_stamp = nh.now();
+
   /* It's not really recommended to write to pins from an interrupt as it can
    * take a relatively long time to execute. However, one of the main purposes
    * of this code is to output accurate PPS signal and this is the most accurate
-   * way that abides by the format constraints on the signal.
+   * way that abides by the format constraints on the signal. In testing, the
+   * default digitalWriteFast pulse width satisfies the 10 us - 200ms width
+   * required by the VLP16
    */
   digitalWriteFast(PPS_PIN, HIGH);
+
+  // enable send and reset delay counter
   sendNMEA = true;
+  nmea_delay = 0;
 }
 
 // Timestamp creation interrupts
@@ -170,4 +195,18 @@ String checksum(String msg) {
     result = "0" + result;
   }
   return result;
+}
+
+void debugNMEA(String& nmea_string, time_t& t_sec, time_t& t_nsec) {
+  // convert ros time to string
+  char t_sec_string[10], t_nsec_string[9];
+  sprintf(t_sec_string, "%lld", (long long)t_sec);
+  sprintf(t_nsec_string, "%lld", (long long)t_nsec);
+  String ros_time_string = String(t_sec_string) + "." + String(t_nsec_string);
+
+  // print NMEA summary
+  nh.loginfo("ROS time:");
+  nh.loginfo(ros_time_string.c_str());
+  nh.loginfo("NMEA string:");
+  nh.loginfo(nmea_string.c_str());
 }
