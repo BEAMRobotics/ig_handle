@@ -29,7 +29,7 @@ elapsedMillis nmea_delay;
 ros::Time pps_stamp, cam_stamp, imu_stamp;
 volatile bool send_nmea = false, cam_closed = false, imu_sampled = false;
 
-// Forward function declarations
+// forward function declarations
 void lidarISR(void);
 void camISR(void);
 void imuISR(void);
@@ -136,13 +136,13 @@ void loop() {
     // debugNMEA(nmea_string, t_sec, t_nsec);
   }
 
-  if (cam_closed == true) {
+  if (cam_closed) {
     cam_closed = false;
     cam_time_msg.time_ref = cam_stamp;
     cam_time_pub.publish(&cam_time_msg);
   }
 
-  if (imu_sampled == true) {
+  if (imu_sampled) {
     imu_sampled = false;
     imu_time_msg.time_ref = imu_stamp;
     imu_time_pub.publish(&imu_time_msg);
