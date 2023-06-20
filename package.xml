@@ -5,7 +5,7 @@
     <description>This package contains all necessary code to operate ig_handle.</description>
     <license>BSD</license>
     <author>gearle@uwaterloo.ca</author>
-    <maintainer email="adthoms@ucla.edu">Gabe Earle</maintainer>
+    <maintainer email="adthoms@ucla.edu">Alex Thoms</maintainer>
     <maintainer email="gearle@uwaterloo.ca">Gabe Earle</maintainer>
 
     <buildtool_depend>catkin</buildtool_depend>
