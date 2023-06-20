@@ -6,6 +6,8 @@ trigger_activation_mode: 'RisingEdge'
 trigger_selector: 'FrameStart'
 trigger_source: 'Line0'
 trigger_overlap_mode: 'ReadOut'
+acquisition_frame_rate_enable: false
+isp_enable: false
 
 image_format_color_coding: Mono8
 auto_sharpness: true
