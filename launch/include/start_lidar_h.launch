@@ -1,52 +1,10 @@
-<!-- -*- mode: XML -*- -->
-<!-- start velodyne_driver/DriverNodelet in a nodelet manager -->
-
 <launch>
   <group ns="lidar_h">
-    <arg name="device_ip" default="192.168.1.201" />
-    <arg name="frame_id" default="lidar_h_link" />
-    <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
-    <arg name="model" default="VLP16" />
-    <arg name="pcap" default="" />
-    <arg name="port" default="2368" />
-    <arg name="read_fast" default="false" />
-    <arg name="read_once" default="false" />
-    <arg name="repeat_delay" default="0.0" />
-    <arg name="rpm" default="600.0" />
-    <arg name="gps_time" default="true" />
-    <arg name="pcap_time" default="false" />
-    <arg name="cut_angle" default="-0.01" />
-    <arg name="timestamp_first_packet" default="false" />
-    <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
-
-    <!-- start nodelet manager -->
-    <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen"/>
-
-    <!-- load driver nodelet into it -->
-    <node pkg="nodelet" type="nodelet" name="$(arg manager)_driver"
-          args="load velodyne_driver/DriverNodelet $(arg manager)" >
-      <param name="device_ip" value="$(arg device_ip)" />
-      <param name="frame_id" value="$(arg frame_id)"/>
-      <param name="model" value="$(arg model)"/>
-      <param name="pcap" value="$(arg pcap)"/>
-      <param name="port" value="$(arg port)" />
-      <param name="read_fast" value="$(arg read_fast)"/>
-      <param name="read_once" value="$(arg read_once)"/>
-      <param name="repeat_delay" value="$(arg repeat_delay)"/>
-      <param name="rpm" value="$(arg rpm)"/>
-      <param name="gps_time" value="$(arg gps_time)"/>
-      <param name="pcap_time" value="$(arg pcap_time)"/>
-      <param name="cut_angle" value="$(arg cut_angle)"/>
-      <param name="timestamp_first_packet" value="$(arg timestamp_first_packet)"/>
-    </node>    
-
-    <!-- start cloud nodelet -->
-    <node pkg="nodelet" type="nodelet" name="$(arg manager)_cloud"
-          args="load velodyne_pointcloud/CloudNodelet $(arg manager)">
-      <param name="model" value="$(arg model)"/>
-      <param name="calibration" value="$(arg calibration)"/>
-      <param name="fixed_frame" value="$(arg frame_id)"/>
-      <param name="target_frame" value="$(arg frame_id)"/>
-    </node>
+    <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
+      <arg name="device_ip" default="192.168.1.201" />
+      <arg name="frame_id" default="lidar_h_link" />
+      <arg name="gps_time" default="true" />
+      <arg name="port" default="2368" />
+    </include>
   </group>
 </launch>

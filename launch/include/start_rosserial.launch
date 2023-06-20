@@ -2,6 +2,6 @@
 <launch>
   <node name="serial_node" pkg="rosserial_python" type="serial_node.py" output="screen">
     <param name="port" value="/dev/teensy"/>
-    <param name="baud" value="57600" />
+    <param name="baud" value="9600" />
   </node>
 </launch>

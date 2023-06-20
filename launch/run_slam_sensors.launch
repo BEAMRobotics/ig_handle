@@ -1,5 +1,0 @@
-<launch>
-
-  <include file="$(find ig_handle)/launch/include/slam_includes.launch" pass_all_args="true"/>
-
-</launch>
