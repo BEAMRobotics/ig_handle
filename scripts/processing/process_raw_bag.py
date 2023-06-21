@@ -87,7 +87,7 @@ def restamp(bag, outbag, data_topics, time_topics):
 
 def main(args):
     parser = argparse.ArgumentParser(
-        description='This script is used to post-process a raw bag from ig2. Currently, this only restamps topics with their appropriate reference times.')
+        description='This script is used to post-process a raw bag from ig_handle. Currently, this only restamps topics with their appropriate reference times.')
 
     parser.add_argument('-b', '--bag', help='input bag file', required=True)
     parser.add_argument(

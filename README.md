@@ -73,17 +73,17 @@ Electrical drawings and schematics for ig_handle's mapping hardware are found in
 
 Everything is currently configured to expect a 192.168.1.XXX subnet (255.255.255.0 aka /24 mask). The lidars are currently configured as 192.168.1.201 (horizontal) and 192.168.1.202 (vertical). The network switch inside of the handle box connects the lidars, the handle computer, and the outboard ethernet ports mounted on the handle box. If you are using this switch alone, it is important to set all computers' IPs and netmasks statically.
 
-The handle's ROS computer is usually statically assigned 192.168.1.150. In order to have this set automatically at every startup, copy 01-ig2_netplan.yaml from ig_handle/config/ to /etc/netplan/. Next, replace "enp2s0" with the name of the ethernet adapter that you are using. You can find the name (eth0, enp0s1, etc) with the command ifconfig (may have to install). If you connect the handle to an internet connected router using one of the outboard ethernet ports, the handle computer will gain internet access for cloning and installing software. You will also be able to network with the computer and lidars from any computer on the router. A router can be used without internet connection just to make it easier to connect to the handle in the field. Make sure any router is set for the 192.168.1.XXX IP range.
+The handle's ROS computer is usually statically assigned 192.168.1.150. In order to have this set automatically at every startup, copy 01-ig_handle_netplan.yaml from ig_handle/config/ to /etc/netplan/. Next, replace "enp2s0" with the name of the ethernet adapter that you are using. You can find the name (eth0, enp0s1, etc) with the command ifconfig (may have to install). If you connect the handle to an internet connected router using one of the outboard ethernet ports, the handle computer will gain internet access for cloning and installing software. You will also be able to network with the computer and lidars from any computer on the router. A router can be used without internet connection just to make it easier to connect to the handle in the field. Make sure any router is set for the 192.168.1.XXX IP range.
 
 In order to participate with the ROS core running on the handle's ROS computer from your laptop over networking, you need to set a couple environment variables to tell your laptop the ROS core is elsewhere on the network. A script called remote-ig.sh in ig_handle/config/ sets this for you. You can put the following line in your ~/.bashrc file to automate it, or execute it manually:
 
 ```
-source ~/catkin_ws/src/ig_handle/config/remote-ig2.sh
+source ~/catkin_ws/src/ig_handle/config/remote-ig_handle.sh
 ```
 
 ### Hotspot
 
-The ig2 computer should be capable of starting its own hotspot. This is useful for ssh'ing into the computer and this can be enabled on startup.
+The ig_handle computer should be capable of starting its own hotspot. This is useful for ssh'ing into the computer and this can be enabled on startup.
 
 First, you need to manually enable hotspot by going to Wifi Settings, click the menu on the top right and click "Turn On Wi-Fi Hotpot...". To change the hotspot network settings (such as name and password), use the editor by running:
 
@@ -107,7 +107,7 @@ The microcontroller is a Teensy 4.1, which is very similar to an Arduino with mo
 
 This info pertains to the robot's computer (the one running the sensor drivers):
 
-Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in. For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in. Copy 99-ig2_udev.rules from ig_handle/config/ to /etc/udev/rules.d/ in order to implement the custom rules. The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match. Make sure your user is in the "dialout" group (should be by default) for the rules to work. The teensy is given a symlink found at /dev/teensy, the imu is given /dev/imu, and the Husky robot connection is given /dev/prolific.
+Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in. For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in. Copy 99-ig_handle_udev.rules from ig_handle/config/ to /etc/udev/rules.d/ in order to implement the custom rules. The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match. Make sure your user is in the "dialout" group (should be by default) for the rules to work. The teensy is given a symlink found at /dev/teensy, the imu is given /dev/imu, and the Husky robot connection is given /dev/prolific.
 
 The USB configurations assumes you are a member of the "dialout" user group. Use the commands "groups" to see your current groups. To add yourself to dialout:
 
