@@ -8,7 +8,7 @@
   <group ns="$(arg camera_name)">
     <!-- Nodelet manager -->
     <node pkg="nodelet" type="nodelet" name="camera_nodelet_manager" args="manager" cwd="node" output="screen"/>
-->
+
     <!-- Camera nodelet -->
     <node pkg="nodelet" type="nodelet" name="spinnaker_camera_nodelet"
           args="load spinnaker_camera_driver/SpinnakerCameraNodelet camera_nodelet_manager" >
