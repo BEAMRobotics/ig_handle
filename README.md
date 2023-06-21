@@ -1,46 +1,67 @@
-# ig_handle
+# ig-handle: a handheld inspector gadget
 
-This package contains all code related to ig_handle.
+**ig-handle** is an open-source, hardware-level time-synchronized handheld LiDAR-visual-inertial sensor kit consisting of:
+ - One [Velodyne Puck](https://velodyneLiDAR.com/products/puck/) LiDAR
+ - Two [FLIR Blackfly S USB3](https://www.flir.com/products/blackfly-s-usb3/?model=BFS-U3-13Y3M-C&vertical=machine+vision&segment=iis) monochrome cameras
+ - One [Xsens MTi-30 AHRS](https://www.xsens.com/hubfs/Downloads/usermanual/MTi_usermanual.pdf) IMU
 
-## Overview
+All sensors are synchronized with the clock of a Teensy 4.1 microcontroller, which provides:
+  - PPS/GPRMC time-synchronization for the LiDAR. See Section 7.4 of the following [manual](https://drive.google.com/file/d/1aXXFh7Xt5NxyyPRi7TeC-lx5p7oeyu10/view?usp=sharing) for details. The LiDAR collects data at 10 Hz
+  - analog signals to start and trigger cameras (within microseconds of each-other) at 20 Hz, enabling stereo vision
+  - digital signals to start and sample IMU data at 200 Hz
 
-"ig_handle" describes our current data collection platform. The hardware includes a SLAM sensor kit, a Teensy 4.1 microcontroller, a USB hub, a network switch, and an Ubuntu 20 computer. The sensor kit is mounted on an aluminum post and the rest of the hardware is contained in a box for portability. The kit can be used with or without a robot and with or without additional sensors.
+**ig-handle** is extensible to additional LiDARs and cameras, with the option to soft-synchronize sonar data collected by a [DT100 multibeam profiling sonar](https://imagenex.com/products/dt100) as demonstrated in our paper:
+
+```
+@article{thoms2023tightly,
+  title={Tightly Coupled, Graph-Based DVL/IMU Fusion and Decoupled Mapping for SLAM-Centric Maritime Infrastructure Inspection},
+  author={Thoms, Alexander and Earle, Gabriel and Charron, Nicholas and Narasimhan, Sriram},
+  journal={IEEE Journal of Oceanic Engineering},
+  year={2023},
+  publisher={IEEE}
+}
+```
+
+If you are interested in building your own **ig-handle**, the latest parts list, CAD models, electrical schematics, and build instructions can be found [here](https://drive.google.com/drive/folders/1DrAMQ9eQS1JjoDI4LWuoENaN7cZ9nRTC?usp=sharing). Note that our build uses the following [Intel NUC computer kit](https://drive.google.com/file/d/1mJj0qhpS1F2KvkGdUfzvh3qHi5qF908q/view?usp=sharing) with an 11th Gen Intel® CoreTM i7-1165G7 processor and 8GB of DDR4 RAM.
+
 
 ## Installation
 
-For installation, please refer to the [Beam Installation Guide](https://github.com/BEAMRobotics/beam_robotics/wiki/Beam-Robotics-Installation-Guide).
-
+For installation, please refer to the [Beam Installation Guide](https://github.com/BEAMRobotics/beam_robotics/wiki/Beam-Robotics-Installation-Guide). This guide covers the installation of dependencies (as required by **ig-handle** and supported robots **pierre** and **ig2**) on a clean Ubuntu 20.04 machine. We recommend setting your catkin workspace to the default directory `~/catkin_ws` as the commands documented in this README follow this convention.
 ## Launch Files
 
-Make sure you have a bag directory located at ~/bags before using the launch files.
+Before using the launch files, create a bag directory via:
+```
+mkdir -p bags
+```
 
-### Raw data
+### Collect Raw Data
 
-Use collect_raw_data.launch to collect data (sensor messages) + time stamps (TimeReference messages, if applicable) for the core SLAM sensor kit. This includes cameras F1 and  F2, lidar_h, and imu.
+**ig-handle** data is collected and saved to a rosbag via:
 
 ```
 roslaunch ig_handle collect_raw_data.launch
 ```
 
-This launch file will start the handle and record a bag file. Bags will be recorded in a timestamped folder as "raw.bag". Use "output" arg to specify the parent directory for the timestamped folder (default is ~/bags). For example:
+By default, rosbags are recorded in a timestamped folder as `raw.bag`. Use the `output` arg to specify an alternative parent directory for the timestamped folder. For example:
 
 ```
 roslaunch ig_handle collect_raw_data.launch output:=~/my_folder
 ```
 
-This command will record data to "~/my_folder/2021_08_09_07_01pm/raw.bag" for example.
+This command will record data to `~/my_folder/2021_08_09_07_01pm/raw.bag`.
 
 ### Using robots
 
-For each robot that ig_handle has been implemented on, there is a launch file that starts the handle plus the additional sensors. These launch files are invoked with a launch argument called "robot" (i.e. robot:=husky).
+For each robot that integrates **ig-handle**, there is a launch file that starts data collection for **ig-handle** plus additional sensors (see Section **Data** for details). These launch files are invoked with a launch argument called `robot`:
 
-The Heron adds the DT100 sonar, cameras F3 and F4, and lidar_v. For example:
+**pierre** adds cameras `F3` and `F4`, LiDAR `lidar_v`, and the DT100 sonar. Data is collected via:
 
 ```
 roslaunch ig_handle collect_raw_data.launch robot:=heron
 ```
 
-The Husky adds cameras F3 and F4, lidar_v, and the Husky base and control packages. The thermal camera is in there, but it is not tested yet. For example:
+**ig2** adds cameras `F3` and `F4`, LiDAR `lidar_v`, and the Husky base and control packages. A [FLIR Boson Plus 640](https://www.flir.com/products/boson-plus/?model=22640A012&vertical=lwir&segment=oem) thermal camera is included, though is not tested. Data is collected via:
 
 ```
 roslaunch ig_handle collect_raw_data.launch robot:=husky
@@ -48,85 +69,118 @@ roslaunch ig_handle collect_raw_data.launch robot:=husky
 
 ## Data
 
-In order to save data, collect_raw_data.launch calls record_bag.sh found in ig_handle/scripts/. By default, image_raw is recorded for each camera. For lidars, velodyne_points and velodyne_packets are recorded. Any changes desired can be made in record_bag.sh.
+In order to collect data, `collect_raw_data.launch` calls `record_bag.sh` found in `ig_handle/scripts/` and records topics specific to each robot.
+
+For **ig-handle**, the following topics are recorded:
+| Topic                     | message types               |
+| ------------------------- | --------------------------- |
+| /F1/image_raw/compressed  | sensor_msgs/CompressedImage |
+| /F2/image_raw/compressed  | sensor_msgs/CompressedImage |
+| /cam/time                 | sensor_msgs/TimeReference   |
+| /imu/data                 | sensor_msgs/Imu             |
+| /imu/time                 | sensor_msgs/TimeReference   |
+| /lidar_h/velodyne_packets | velodyne_msgs/VelodyneScan  |
+| /lidar_h/velodyne_points  | sensor_msgs/PointCloud2     |
+
+For **pierre** and **ig2**, the following additional topics are recorded:
+| Topic                     | message types               |
+| ------------------------- | --------------------------- |
+| /F3/image_raw/compressed  | sensor_msgs/CompressedImage |
+| /F4/image_raw/compressed  | sensor_msgs/CompressedImage |
+| /lidar_v/velodyne_packets | velodyne_msgs/VelodyneScan  |
+| /lidar_v/velodyne_points  | sensor_msgs/PointCloud2     |
+
+Further, **pierre** records `/DT100/sonar_scans` topics of message type `sensor_msgs/PointCloud2`, while **ig2** records `/thermal/image_raw/compressed` topics of message type `sensor_msgs/CompressedImage`. If additional topics are desired, `record_bag.sh` can be modified accordingly.
 
 ### Processing
 
-Processing scripts for ig_handle data are stored in ig_handle/scripts/processing.
+Processing scripts for collected raw data are found in `ig_handle/scripts/processing`. The description and interface for these scripts are described below.
 
-process_raw_bag.py is used to combine the TimeReference and sensor messages collected during data capture. The script replaces the sensor messages' default timestamps with the TimeReference timestamps using a simple first in first out queue at the moment. This scripts also reserializes every message to its header timestamp (see additional notes for more info). The interface for the script is best explained by reading the argsparse help messages. The bagfile argument (-b) needs to be set every time to find the input bag. The values for data and time topics (-d, -t) are set correctly by default, so only specify those arguments if you've changed the data collection process.
+#### `process_raw_bag.py`
 
-stamp_from_serialization.py can be used on lidar data where the PPS/GPRMC synchronization method failed.  If PPS/GPRMC synchronization did not fail, do not use this script. When it fails, the lidar data's header timestamps will not make sense, i.e. they will not start at 0 (no synchronization at all), and they will not match the rest of the bag (synchronized to the ROS clock). In this case, lidar message serialization time can be used since ethernet can convey the small messages very quickly. Use this script before process_raw_bag.py.
+**Description**: This script restamps camera and IMU sensor messages with their appropriate time reference messages as per the clock of the microcontroller. Acknowledging camera and IMU sensor messages (i.e. `sensor_msgs/CompressedImage` and `sensor_msgs/Imu`) take longer to serialize than time reference messages (i.e. `/cam/time` and `/imu/time`), the script discards camera and IMU sensor messages before the first time reference (based on serialized time) and then proceeds to restamp sensor messages with time references using a first-in-first-out queue. In testing, we observe no camera and IMU signal dropout, permitting such a simple offline time-synchronization strategy. This script also re-serializes every message to its header timestamp. Note that PPS/GPRMC synchronization takes approximately 4-5 seconds to initialize (given the microcontroller's setup time) and we have accounted for this in `process_raw_bag.py` by **discarding the first 5 seconds of data**.
 
-The following two steps are to take the raw.bag to a bag ready for SLAM:
-
+**Interface**: The script's interface is accessed via:
 ```
-python3 process_raw_bag.py -b [path_to_raw_bag] -d [list_of_data_topics] -t [list_of_time_reference_topics_respectively]
+cd ~/catkin_ws/src/ig_handle/scripts/processing
+python3 process_raw_bag.py --help
 ```
+The bagfile argument `-b` needs to be set every time to find the input bag. The values for data and time topics `-d, -t` are set correctly by default, so only specify those arguments if you've changed the data collection process. Below is an example of how to process collected raw data:
+```
+cd ~/catkin_ws/src/ig_handle/scripts/processing
+python3 process_raw_bag.py -b ~/bags/YYY_MM_DD_HH_MM_SS/raw.bag
+```
+The script will output a rosbag called `outout.bag` to the same folder specified via the `-b` argument, which can then be passed to a SLAM algorithm.
+
+#### `stamp_from_serialization.py`
+
+**Description**: This script restamps LiDAR messages using serialization time (adjusted for the required delay in NMEA message generation as enforced in `main/main.ino`) to approximate a soft-synchronization strategy for the LiDAR. All other topics are left unmodified. In doing so, the bag output from this script may be used along with `outout.bag` produced by `process_raw_bag.py` to compare hardware-level time-synchronization vs software-level time-synchronization.
+
+**Interface**: The script's interface is accessed via:
+```
+cd ~/catkin_ws/src/ig_handle/scripts/processing
+python3 stamp_from_serialization.py --help
+```
+The bagfile argument `-b` needs to be set every time to find the input bag. The values of topics `-t` are set correctly by default, so only specify those arguments if you've changed the data collection process. Below is an example of how to restamp LiDAR messages using serialization time:
+```
+cd ~/catkin_ws/src/ig_handle/scripts/processing
+python3 stamp_from_serialization.py -b ~/bags/YYY_MM_DD_HH_MM_SS/raw.bag
+```
+The script will output a rosbag called `outout_softsynch.bag` to the same folder specified via the `-b` argument. You can then pass `output_softsynch.bag` to a SLAM algorithm and compare its performance against `outout.bag`.
 
 ## Documentation
 
-### ECAD
-Electrical drawings and schematics for ig_handle's mapping hardware are found in the ecad folder. It uses the open source ECAD tool KiCad (https://kicad.org). The purpose of the hardware is to provide time synchronization to the connected sensors, those being: Teensy 4.1, Velodyne VLP LiDAR, Flir BlackflyS USB3 Cameras, and a Xsens MTi-30 series IMU
-
+In addition to the build instructions found [here](https://drive.google.com/drive/folders/1DrAMQ9eQS1JjoDI4LWuoENaN7cZ9nRTC?usp=sharing), instructions on usage are provided.
 ### Networking
 
-Everything is currently configured to expect a 192.168.1.XXX subnet (255.255.255.0 aka /24 mask). The lidars are currently configured as 192.168.1.201 (horizontal) and 192.168.1.202 (vertical). The network switch inside of the handle box connects the lidars, the handle computer, and the outboard ethernet ports mounted on the handle box. If you are using this switch alone, it is important to set all computers' IPs and netmasks statically.
+The network (as per `ig_handle/config/01-ig_handle_netplan.yaml`) is configured to expect a `192.168.1.XXX` subnet (255.255.255.0 aka /24 mask). The LiDARs are configured as `192.168.1.201` (`lidar_h`) and `192.168.1.202` (`lidar_v`). The network switch inside of the handle box connects the LiDARs, the handle computer, and the outboard ethernet ports mounted on the handle box. If you are using this switch alone, it is important to set all IPs and netmasks **statically**.
 
-The handle's ROS computer is usually statically assigned 192.168.1.150. In order to have this set automatically at every startup, copy 01-ig_handle_netplan.yaml from ig_handle/config/ to /etc/netplan/. Next, replace "enp2s0" with the name of the ethernet adapter that you are using. You can find the name (eth0, enp0s1, etc) with the command ifconfig (may have to install). If you connect the handle to an internet connected router using one of the outboard ethernet ports, the handle computer will gain internet access for cloning and installing software. You will also be able to network with the computer and lidars from any computer on the router. A router can be used without internet connection just to make it easier to connect to the handle in the field. Make sure any router is set for the 192.168.1.XXX IP range.
+The handle's ROS computer is statically assigned `192.168.1.150` via the netplan. In order to have this set automatically at every startup, copy `ig_handle/config/01-ig_handle_netplan.yaml` to `/etc/netplan/`. Next, replace `enp2s0` with the name of the ethernet adapter that you are using. You can find the name (eth0, enp0s1, etc.) with the command:
+ ```
+ ifconfig
+ ```
+If you connect the handle to an internet connected router using one of the outboard ethernet ports, the handle computer will gain internet access for cloning and installing software. You will also be able to network with the computer and LiDARs from any computer on the router. A router can be used without internet connection just to make it easier to connect to the handle in the field. Make sure any router is set for the 192.168.1.XXX IP range.
 
-In order to participate with the ROS core running on the handle's ROS computer from your laptop over networking, you need to set a couple environment variables to tell your laptop the ROS core is elsewhere on the network. A script called remote-ig.sh in ig_handle/config/ sets this for you. You can put the following line in your ~/.bashrc file to automate it, or execute it manually:
-
+In order to participate with the ROS core running on the handle's ROS computer from your laptop over networking, you need to tell your laptop the ROS core is elsewhere on the network. This can be done be executing:
 ```
 source ~/catkin_ws/src/ig_handle/config/remote-ig_handle.sh
 ```
+Alternatively, you can copy the contents of `remote-ig_handle.sh` into your `~/.bashrc` file to automate the process.
 
 ### Hotspot
 
-The ig_handle computer should be capable of starting its own hotspot. This is useful for ssh'ing into the computer and this can be enabled on startup.
-
-First, you need to manually enable hotspot by going to Wifi Settings, click the menu on the top right and click "Turn On Wi-Fi Hotpot...". To change the hotspot network settings (such as name and password), use the editor by running:
-
+The handle's computer should be capable of starting its own hotspot. This is useful for ssh'ing into the computer and this can be enabled on startup. First, you need to manually enable hotspot by going to Wifi Settings, click the menu on the top right and click "Turn On Wi-Fi Hotpot...". To change the hotspot network settings (such as name and password), use the editor by running:
 ```
 nm-connection-editor
 ```
-
-To enable hotspot at computer startup, copy ig_handle/config/hotspot.service to /etc/systemd/
-
-You also need to check that the shell script in ig_handle/scripts/start_hotspot.sh is an excutable. If not, run:
-
+To enable hotspot at computer startup, copy `ig_handle/config/hotspot.service` to `/etc/systemd/`. You also need to check that the shell script in `ig_handle/scripts/start_hotspot.sh` is an excutable. If not, run:
 ```
-sudo chmod +x ig_handle/scripts/start_hotspot.sh
+sudo chmod +x ~/catkin_ws/src/ig_handle/scripts/start_hotspot.sh
 ```
 
 ### Microcontroller
 
-The microcontroller is a Teensy 4.1, which is very similar to an Arduino with more GPIO and power. The Teensy GPIO is used for sending trigger signals to cameras, receiving camera exposure indication signals, sending an imu start signal, receiving imu measurement indications, sending Lidar PPS (1hz synchronization pulse), and Lidar GPRMC serial signals (simulating GPS time/location messages). The Teensy is communicating with the handle's ROS computer using a rosserial node. The rosserial node gives the arduino code a nodehandle to subscribe/publish messages and access synchronized ROS time. When the Teensy receives camera/imu measurement indications, it publishes a TimeReference message. The Lidar messages can be verified by visiting the lidars' online configuration pages, and making sure the PPS is marked as "locked" and the GPS time is being shown and looks accurate (location is irrelevant).
+The microcontroller is a Teensy 4.1, which is very similar to an Arduino with more GPIO and power. The Teensy GPIO is used for sending start and trigger signals to cameras, receiving camera exposure indication signals, sending an imu start signal, receiving imu measurement indications, sending Lidar PPS (1hz synchronization pulse), and Lidar GPRMC serial signals (simulating GPS time/location messages with microsecond accuracy). The Teensy communicates with the handle's ROS computer using a rosserial node. The rosserial node gives the arduino code a nodehandle to subscribe/publish messages and access synchronized ROS time. When the Teensy receives camera/imu measurement indications, it publishes a TimeReference message. The PPS/GPRMC time-synchronization for the LiDAR can be verified by visiting the LiDARs' online configuration pages (enter `192.168.1.201` and/or `192.168.1.202` in a web browser), and making sure the PPS field is marked as `locked` and the GPS Position field shows `43 65.107N 793 47.702E` (this position is spoofed and indicates GPRMC serial signals are being received by the LiDAR).
 
 ### Udev
 
-This info pertains to the robot's computer (the one running the sensor drivers):
+Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in. For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in. The installation process provided in Section **Installation** automates Udev rule creation. This process can also be accomplished manually by copying `/ig-handle/catkin_ws/src/ig_handle/config/99-ig_handle_udev.rules` to `/etc/udev/rules.d/` in order to implement the custom rules. The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match. Make sure your user is in the `dialout` group (should be by default) for the rules to work. The teensy is given a symlink found at `/dev/teensy`, the imu is given `/dev/imu`, and the Husky robot connection is given `/dev/prolific`.
 
-Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in. For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in. Copy 99-ig_handle_udev.rules from ig_handle/config/ to /etc/udev/rules.d/ in order to implement the custom rules. The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match. Make sure your user is in the "dialout" group (should be by default) for the rules to work. The teensy is given a symlink found at /dev/teensy, the imu is given /dev/imu, and the Husky robot connection is given /dev/prolific.
-
-The USB configurations assumes you are a member of the "dialout" user group. Use the commands "groups" to see your current groups. To add yourself to dialout:
+The USB configurations assumes you are a member of the `dialout` user group. Use the commands `groups` to see your current groups. To add yourself to `dialout`:
 
 ```
 sudo adduser $USER dialout
 ```
 
-### Using Screen for data recording
+### Using Screen for Data Collection
 
-Screen is a program for managing terminal sessions. It allows you to create terminal processes then attach and detach them using commands. When you detach, the process keeps running cleanly. You can pick up a detached process from any terminal. This can be used with ig_handle to start and stop data collection seamlessly from different computers. It also fixes bugs that occur with orphaned processes from ROS and data loss from the Sonar driver. Install Screen:
-
+**Screen** is a program for managing terminal sessions. It allows you to create terminal processes then attach and detach them using commands. When you detach, the process keeps running cleanly. You can pick up a detached process from any terminal. This can be used with **ig-handle** to start and stop data collection seamlessly from different computers. It also fixes bugs that occur with orphaned processes from ROS and data loss from the Sonar driver. Install **Screen** via:
 ```
 sudo apt install screen
 ```
+In order to start a session, use the command `screen`, then hit enter. You will now have a fresh terminal, but it is a screen process, so you can detach from it. Press ctrl+a followed by ctrl+d. Now the process is running in the background. You can return to this process from any terminal or ssh connection using the command `screen -r`. If there are multiple detached processes, `screen -r` will display a list of process ids. You can connect to any of them using `screen -r $id`.
 
-In order to start a session, use the command 'screen', then hit enter. You will now have a fresh terminal, but it is a screen process, so you can detach from it. Press ctrl+a followed by ctrl+d. Now the process is running in the background. You can return to this process from any terminal or ssh connection using the command 'screen -r'. If there are multiple detached processes, 'screen -r' will display a list of process ids. You can connect to any of them using 'screen -r $id'.
-
-A sequence for launching data collection on the heron would look like:
-
+A sequence for launching data collection on **pierre** would look like:
 ```
 screen
 # press enter to start
@@ -136,29 +190,4 @@ roslaunch ig_handle collect_raw_data.launch robot:=heron
 screen -r
 # end data collection
 ```
-
 This prevents the sonar virtual machine from freezing bugs that occur when a standard ssh process is awaiting reconnection.
-
-### Advanced launching
-
-The package has a launch file for each sensor, which are included or not depending on the robot. collect_raw_data launches handle_includes (no robot arg), heron_includes (robot:=heron), or husky_includes (robot:=husky). handle_includes has the core sensor kit launch files, then heron_includes or husky_includes have handle_includes plus robot specific stuff. If you want to customize your launch for a given application, you can comment things out.
-
-Terminator layouts can be useful for quickly pulling up a complicated nested terminal layout with preset commands, such as viewing all the sensor rostopic publishing frequencies. The terminator documenation provides more info, but be warned its finicky. One useful terminator layout is provided that launches collect_raw_data and displays many rostopic publishing frequencies. In order to use it, copy config from /ig_handle/config/ to ~/.config/terminator/ and run:
-
-```
-terminator -l ig_handle
-```
-
-### Additonal notes
-
-Synchronization confusion can result from the difference between serialization time and header timestamps.
-
-Serialization time:
-
-ROS bags record the time that messages are serialized (the moment the message was saved). This time is used by rqt_bag to show the timeline of messages. This time is also the third argument returned from iterating bag.read_messages() in python. Finally, this time indicates when the message is published when playing back the bag.
-
-Timestamp:
-
-Every ROS sensor message has a header (sensor topic + /header) with a stamp field. This timestamp is part of the message and has nothing to do with data transport times. For example, the lidar driver sets this field using the GPS time data forwarded by the lidar.
-
-For synchronization, the header timestamps are the important ones, since the time the message save is affected by buffering and bandwidth limitations. So, running process_raw_bag.py resets all serialization times to match the header timestamps. Confusion can arise viewing rqt_bag prior to processing the data, when the serialization times have not been reset yet.
