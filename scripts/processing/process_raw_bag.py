@@ -12,7 +12,7 @@ def topic_to_dict(bag: rosbag.Bag, topics, type="msg") -> dict:
     Args:
         bag (rosbag.Bag): rosbag
         topics (array): topics
-        type (string: type of information to store
+        type (string): type of information to store
           "t" stored serialization time
           "msg" stores messages
 

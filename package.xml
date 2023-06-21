@@ -2,7 +2,7 @@
 <package format="2">
     <name>ig_handle</name>
     <version>1.0.0</version>
-    <description>This package contains all necessary code to operate ig_handle.</description>
+    <description>This package contains all necessary code to operate ig-handle.</description>
     <license>BSD</license>
     <author>gearle@uwaterloo.ca</author>
     <maintainer email="adthoms@ucla.edu">Alex Thoms</maintainer>

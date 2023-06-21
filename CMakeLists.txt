@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ig_handle)
 
-## c++11 feature
 SET(CMAKE_CXX_STANDARD 14)
 
 find_package(catkin REQUIRED COMPONENTS
