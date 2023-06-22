@@ -1,8 +1,12 @@
 import rosbag
+import rospy
 import sys
 import argparse
 import os
 import warnings
+
+# start up time of PPS/GPRMC synchronization
+ppp_gprmc_startup = 5
 
 
 def topic_to_dict(bag: rosbag.Bag, topics, type="msg") -> dict:
@@ -63,6 +67,9 @@ def restamp(bag, outbag, data_topics, time_topics):
                 warnings.warn(
                     f"All messages on {topic} are recorded before their associated time topic and will not be restamped", Warning)
 
+    # get start time of bag for clipping
+    start_time = rospy.Time.from_sec(bag.get_start_time() + ppp_gprmc_startup)
+
     # associate stamps with messages assuming first-in-first-out queue (i.e no signal dropout)
     for i, topic in enumerate(data_topics):
         for j in range(len(messages_msg[i])):
@@ -74,12 +81,14 @@ def restamp(bag, outbag, data_topics, time_topics):
                               str(data_msg.header.seq) + ": ran out of timestamps.", Warning)
                 continue
 
-            data_msg.header.stamp = time_msg.time_ref
-            outbag.write(topic, data_msg, time_msg.time_ref)
+            # clip start of bag to account for start up time of PPS/GPRMC synchronization
+            if time_msg.time_ref >= start_time:
+                data_msg.header.stamp = time_msg.time_ref
+                outbag.write(topic, data_msg, time_msg.time_ref)
 
     # write remaining topics
     for topic, msg, t in bag.read_messages():
-        if topic not in data_topics and topic not in time_topics:
+        if topic not in data_topics and topic not in time_topics and t >= start_time:
             outbag.write(topic, msg, t)
 
     return outbag
