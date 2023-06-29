@@ -5,19 +5,19 @@
 
 #define USE_USBCON
 
-// electrical component pin numbers
-#define GPSERIAL Serial1  // GPRMC
-#define PPS_PIN 2         // PPS
-#define CAM_OUT 3         // Cam_Trig
-#define CAM_IN 4          // Cam_Exp
-#define IMU_OUT 8         // IMU_SyncOut
-#define IMU_IN 9          // IMU_SyncIn
+// Electrical component pin numbers
+#define GPSERIAL Serial1  // LiDAR: GPS Serial Receive (White)
+#define PPS_PIN 2         // LiDAR: GPS Sync Pulse (Yellow)
+#define CAM_OUT 3         // Cam: Line 0 (Black)
+#define CAM_IN 4          // Cam: Line 1 (White)
+#define IMU_OUT 8         // IMU: SynchIn (Blue)
+#define IMU_IN 9          // IMU: SynchOut (Pink)
 
 // PPS/GPRMC times-synch
 constexpr int BAUD_RATE = 9600;              // baud/s
 constexpr int PPS_PULSE_WIDTH = 20;          // ms
 constexpr int PPS_NMEA_MIN_SEPARATION = 55;  // ms
-constexpr int TIME_ZONE_OFFSET = -7;         // hr
+constexpr int TIME_ZONE_OFFSET = -7;         // hr from UTC (User Set)
 
 using namespace TeensyTimerTool;
 
@@ -42,9 +42,9 @@ volatile bool send_nmea = false, cam_closed = false, imu_sampled = false;
 /*
  * Initial setup for the arduino sketch
  * This function:
- *  - Configures timers for LiDAR and camera triggering
+ *  - Configures timers for LiDAR PPS and camera triggering
  *  - Advertises and subscribes to ROS topics
- *  - UART Serial setup for NMEA strings
+ *  - UART Serial setup for NMEA messages
  *  - Holds until rosserial is connected
  */
 void setup() {
@@ -100,7 +100,7 @@ void setup() {
 /*
  * Main loop
  * This function:
- *  - Triggers lidar line (PPS) and transmits NMEA string over GPSERIAL
+ *  - Transmits NMEA message over GPSERIAL
  *  - Triggers camera line and publishes the timestamp to /cam_time
  *  - Publishes the timestamp of IMU capture to /imu_time
  */
@@ -113,12 +113,8 @@ void loop() {
     // ensure min 50 ms width between end of PPS and start of NMEA message
     if (nmea_delay >= PPS_NMEA_MIN_SEPARATION) {
       // get PPS time
-      time_t t_sec = pps_stamp.sec;
-      time_t t_sec_gmt = t_sec - TIME_ZONE_OFFSET * 3600;
-
-      struct tm* timeinfo;
-      timeinfo = localtime(&t_sec_gmt);
-      nh.loginfo(asctime(timeinfo));
+      const time_t& t_sec = pps_stamp.sec;
+      const time_t t_sec_gmt = t_sec - TIME_ZONE_OFFSET * 3600;
 
       // create NMEA string
       char time_now[7], date_now[7];
@@ -134,7 +130,7 @@ void loop() {
 
       // print NMEA string to serial as an NMEA message
       GPSERIAL.print(nmea_string);
-      nh.loginfo(nmea_string.c_str());  // DEBUG
+      // nh.loginfo(nmea_string.c_str());  // DEBUG
 
       // reset send
       send_nmea = false;
@@ -162,11 +158,10 @@ void ppsISR(void) {
   micros_since_pps = 0;
 
   // get time of PPS
-  time_t pps_sec = rtc_get();
+  const time_t pps_sec = rtc_get();
   pps_stamp.sec = pps_sec;
   pps_stamp.nsec = 0;
-  // nh.setNow(pps_stamp);
-  printROSTime("PPS Time:", pps_stamp);  // DEBUG
+  // printROSTime("PPS Time:", pps_stamp);  // DEBUG
 
   // toggle to HIGH
   digitalToggleFast(PPS_PIN);
@@ -179,7 +174,6 @@ void ppsISR(void) {
 void camISR(void) {
   cam_stamp.sec = pps_stamp.sec;
   cam_stamp.nsec = micros_since_pps * 1000;
-  // cam_stamp = nh.now();
   cam_closed = true;
   // printROSTime("CAM Time:", cam_stamp);  // DEBUG
 }
@@ -187,7 +181,6 @@ void camISR(void) {
 void imuISR(void) {
   imu_stamp.sec = pps_stamp.sec;
   imu_stamp.nsec = micros_since_pps * 1000;
-  // imu_stamp = nh.now();
   imu_sampled = true;
   // printROSTime("IMU Time:", imu_stamp);  // DEBUG
 }
