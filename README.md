@@ -5,9 +5,9 @@
  - Two [FLIR Blackfly S USB3](https://www.flir.com/products/blackfly-s-usb3/?model=BFS-U3-13Y3M-C&vertical=machine+vision&segment=iis) monochrome cameras
  - One [Xsens MTi-30 AHRS](https://www.xsens.com/hubfs/Downloads/usermanual/MTi_usermanual.pdf) IMU
 
-All sensors are synchronized with the clock of a Teensy 4.1 microcontroller, which provides:
+All sensors are synchronized with the Real Time Clock (RTC) of a Teensy 4.1 microcontroller, which provides:
   - PPS/GPRMC time-synchronization for the LiDAR. See Section 7.4 of the following [manual](https://drive.google.com/file/d/1aXXFh7Xt5NxyyPRi7TeC-lx5p7oeyu10/view?usp=sharing) for details. The LiDAR collects data at 10 Hz
-  - analog signals to start and trigger cameras (within microseconds of each-other) at 20 Hz, enabling stereo vision
+  - analog signals to start and simultaneously trigger cameras at 20 Hz, enabling stereo vision
   - digital signals to start and sample IMU data at 200 Hz
 
 **ig-handle** is extensible to additional LiDARs and cameras, with the option to soft-synchronize sonar data collected by a [DT100 multibeam profiling sonar](https://imagenex.com/products/dt100) as demonstrated in our paper:
@@ -49,7 +49,7 @@ By default, rosbags are recorded in a timestamped folder as `raw.bag`. Use the `
 roslaunch ig_handle collect_raw_data.launch output:=~/my_folder
 ```
 
-This command will record data to `~/my_folder/2021_08_09_07_01pm/raw.bag`.
+This command will record data to `~/my_folder/YYYY_MM_DD_HH_MM_SS/raw.bag`. Note that, when powered on, the LiDAR takes approximately 25-30 seconds to connect over LAN. Given this, wait 30 seconds after **ig-handle** is powered to collect raw data.
 
 ### Using robots
 
@@ -94,54 +94,35 @@ Further, **pierre** records `/DT100/sonar_scans` topics of message type `sensor_
 
 ### Processing
 
-Processing scripts for collected raw data are found in `ig_handle/scripts/processing`. The description and interface for these scripts are described below.
+Raw data is processed using `process_raw_bag.py` found in `ig_handle/scripts/`. Its description and interface follows.
 
-#### `process_raw_bag.py`
-
-**Description**: This script restamps camera and IMU sensor messages with their appropriate time reference messages as per the clock of the microcontroller. Acknowledging camera and IMU sensor messages (i.e. `sensor_msgs/CompressedImage` and `sensor_msgs/Imu`) take longer to serialize than time reference messages (i.e. `/cam/time` and `/imu/time`), the script discards camera and IMU sensor messages before the first time reference (based on serialized time) and then proceeds to restamp sensor messages with time references using a first-in-first-out queue. In testing, we observe no camera and IMU signal dropout, permitting such a simple offline time-synchronization strategy. This script also re-serializes every message to its header timestamp. Note that PPS/GPRMC synchronization takes approximately 4-5 seconds to initialize (given the microcontroller's setup time) and we have accounted for this in `process_raw_bag.py` by **discarding the first 5 seconds of data**.
+**Description**: This script restamps camera and IMU sensor messages with their appropriate time reference messages as per the RTC clock of the microcontroller. Acknowledging camera and IMU sensor messages (i.e. `sensor_msgs/CompressedImage` and `sensor_msgs/Imu`) take longer to serialize than time reference messages (i.e. `/cam/time` and `/imu/time`), the script discards camera and IMU sensor messages before the first time reference (based on serialized time) and then proceeds to restamp sensor messages with time references using a first-in-first-out queue. In testing, we observe no camera and IMU signal dropout, permitting such a simple offline time-synchronization strategy. This script also re-serializes every message to its header timestamp.
 
 **Interface**: The script's interface is accessed via:
 ```
-cd ~/catkin_ws/src/ig_handle/scripts/processing
+cd ~/catkin_ws/src/ig_handle/scripts
 python3 process_raw_bag.py --help
 ```
 The bagfile argument `-b` needs to be set every time to find the input bag. The values for data and time topics `-d, -t` are set correctly by default, so only specify those arguments if you've changed the data collection process. Below is an example of how to process collected raw data:
 ```
-cd ~/catkin_ws/src/ig_handle/scripts/processing
-python3 process_raw_bag.py -b ~/bags/YYY_MM_DD_HH_MM_SS/raw.bag
+cd ~/catkin_ws/src/ig_handle/scripts
+python3 process_raw_bag.py -b ~/bags/YYYY_MM_DD_HH_MM_SS/raw.bag
 ```
-The script will output a rosbag called `outout.bag` to the same folder specified via the `-b` argument, which can then be passed to a SLAM algorithm.
-
-#### `stamp_from_serialization.py`
-
-**Description**: This script restamps LiDAR messages using serialization time (adjusted for the required delay in NMEA message generation as enforced in `main/main.ino`) to approximate a soft-synchronization strategy for the LiDAR. All other topics are left unmodified. In doing so, the bag output from this script may be used along with `outout.bag` produced by `process_raw_bag.py` to compare hardware-level time-synchronization vs software-level time-synchronization.
-
-**Interface**: The script's interface is accessed via:
-```
-cd ~/catkin_ws/src/ig_handle/scripts/processing
-python3 stamp_from_serialization.py --help
-```
-The bagfile argument `-b` needs to be set every time to find the input bag. The values of topics `-t` are set correctly by default, so only specify those arguments if you've changed the data collection process. Below is an example of how to restamp LiDAR messages using serialization time:
-```
-cd ~/catkin_ws/src/ig_handle/scripts/processing
-python3 stamp_from_serialization.py -b ~/bags/YYY_MM_DD_HH_MM_SS/raw.bag
-```
-The script will output a rosbag called `outout_softsynch.bag` to the same folder specified via the `-b` argument. You can then pass `output_softsynch.bag` to a SLAM algorithm and compare its performance against `outout.bag`.
+The script will output a rosbag called `output.bag` to the same folder specified via the `-b` argument, which can then be passed to a SLAM algorithm.
 
 ## Documentation
 
 In addition to the build instructions found [here](https://drive.google.com/drive/folders/1DrAMQ9eQS1JjoDI4LWuoENaN7cZ9nRTC?usp=sharing), instructions on usage are provided.
+
 ### Networking
 
-The network (as per `ig_handle/config/01-ig_handle_netplan.yaml`) is configured to expect a `192.168.1.XXX` subnet (255.255.255.0 aka /24 mask). The LiDARs are configured as `192.168.1.201` (`lidar_h`) and `192.168.1.202` (`lidar_v`). The network switch inside of the handle box connects the LiDARs, the handle computer, and the outboard ethernet ports mounted on the handle box. If you are using this switch alone, it is important to set all IPs and netmasks **statically**.
+The network (as per `ig_handle/config/01-ig_handle_netplan.yaml`) is configured to expect a `192.168.1.XXX` subnet (255.255.255.0 aka /24 mask). The LiDARs are configured as `192.168.1.201` for LiDAR `lidar_h` and `192.168.1.202` for LiDAR `lidar_v`. The network switch inside of the handle box connects the LiDARs, the handle computer, and the outboard ethernet ports mounted on the handle box. If you are using this switch alone, it is important to set all IPs and netmasks **statically**.
 
-The handle's ROS computer is statically assigned `192.168.1.150` via the netplan. In order to have this set automatically at every startup, copy `ig_handle/config/01-ig_handle_netplan.yaml` to `/etc/netplan/`. Next, replace `enp2s0` with the name of the ethernet adapter that you are using. You can find the name (eth0, enp0s1, etc.) with the command:
+The handle's ROS computer is statically assigned `192.168.1.150` via the netplan. In order to have this set automatically at startup, copy `ig_handle/config/01-ig_handle_netplan.yaml` to `/etc/netplan/`. Next, replace `enp2s0` with the name of the ethernet adapter that you are using. You can find the name (eth0, enp0s1, etc.) with the command:
  ```
  ifconfig
  ```
-If you connect the handle to an internet connected router using one of the outboard ethernet ports, the handle computer will gain internet access for cloning and installing software. You will also be able to network with the computer and LiDARs from any computer on the router. A router can be used without internet connection just to make it easier to connect to the handle in the field. Make sure any router is set for the 192.168.1.XXX IP range.
-
-In order to participate with the ROS core running on the handle's ROS computer from your laptop over networking, you need to tell your laptop the ROS core is elsewhere on the network. This can be done be executing:
+To gain access to the internet, we recommend to manually connect to a Wifi network. In order to participate with the ROS core running on the handle's ROS computer from your laptop over networking, you need to tell your laptop the ROS core is elsewhere on the network. This can be done be executing:
 ```
 source ~/catkin_ws/src/ig_handle/config/remote-ig_handle.sh
 ```
@@ -164,7 +145,12 @@ The microcontroller is a Teensy 4.1, which is very similar to an Arduino with mo
 
 ### Udev
 
-Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in. For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in. The installation process provided in Section **Installation** automates Udev rule creation. This process can also be accomplished manually by copying `/ig-handle/catkin_ws/src/ig_handle/config/99-ig_handle_udev.rules` to `/etc/udev/rules.d/` in order to implement the custom rules. The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match. Make sure your user is in the `dialout` group (should be by default) for the rules to work. The teensy is given a symlink found at `/dev/teensy`, the imu is given `/dev/imu`, and the Husky robot connection is given `/dev/prolific`.
+Udev rules are used in Ubuntu to create custom USB configurations when USB devices are plugged in. For example, in order to ensure the Teensy and IMU ports are always known, Udev rules are used to create aliases when these devices are plugged in. The installation process provided in Section **Installation** automates Udev rule creation. This process can also be accomplished manually by copying `/ig-handle/catkin_ws/src/ig_handle/config/99-ig_handle_udev.rules` to `/etc/udev/rules.d/` in order to implement the custom rules via:
+```
+sudo cp ~/catkin_ws/src/ig_handle/config/99-ig2_udev.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo service udev restart && sudo udevadm trigger
+```
+Note Udev rules are automatically set in Section **Installation**.The rules scan for devices plugged in with the correct idVendor and idProduct, and execute actions when there is a match. Make sure your user is in the `dialout` group (should be by default) for the rules to work. The teensy is given a symlink found at `/dev/teensy`, the imu is given `/dev/imu`, and the Husky robot connection is given `/dev/prolific`.
 
 The USB configurations assumes you are a member of the `dialout` user group. Use the commands `groups` to see your current groups. To add yourself to `dialout`:
 
