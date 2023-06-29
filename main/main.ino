@@ -1,5 +1,6 @@
 #include <ros.h>
 #include <sensor_msgs/TimeReference.h>
+#include <TeensyTimerTool.h>
 #include <TimeLib.h>
 
 #define USE_USBCON
@@ -12,11 +13,19 @@
 #define IMU_OUT 8         // IMU_SyncOut
 #define IMU_IN 9          // IMU_SyncIn
 
+// PPS/GPRMC times-synch
+constexpr int BAUD_RATE = 9600;              // baud/s
+constexpr int PPS_PULSE_WIDTH = 20;          // ms
+constexpr int PPS_NMEA_MIN_SEPARATION = 55;  // ms
+constexpr int TIME_ZONE_OFFSET = -7;         // hr
+
+using namespace TeensyTimerTool;
+
 // ROS nodehandle
 ros::NodeHandle nh;
 
 // microcontroller clock
-IntervalTimer teensy_clock;
+PeriodicTimer teensy_clock(TCK_RTC);
 
 // messages and time topics for camera and imu
 sensor_msgs::TimeReference cam_time_msg;
@@ -26,15 +35,9 @@ ros::Publisher imu_time_pub("/imu/time", &imu_time_msg);
 
 // time-sync indicators
 elapsedMillis nmea_delay;
+elapsedMicros micros_since_pps;
 ros::Time pps_stamp, cam_stamp, imu_stamp;
 volatile bool send_nmea = false, cam_closed = false, imu_sampled = false;
-
-// forward function declarations
-void lidarISR(void);
-void camISR(void);
-void imuISR(void);
-String checksum(String msg);
-void debugNMEA();
 
 /*
  * Initial setup for the arduino sketch
@@ -49,13 +52,13 @@ void setup() {
 
   // set GPSERIAL baud rate and transmission inversion for TTL RS-232
   // transmission
-  GPSERIAL.begin(9600, SERIAL_8N1_TXINV);
+  GPSERIAL.begin(BAUD_RATE, SERIAL_8N1_TXINV);
 
   // set PPS pin
   pinMode(PPS_PIN, OUTPUT);
 
-  // begin clock and call lidarISR every second
-  teensy_clock.begin(lidarISR, 1000000);
+  // begin clock and call ppsISR every second
+  teensy_clock.begin(ppsISR, 1'000'000);
 
   /* Camera and IMU */
 
@@ -102,83 +105,91 @@ void setup() {
  *  - Publishes the timestamp of IMU capture to /imu_time
  */
 void loop() {
-  // ensure min 50 ms width between end of PPS and start of NMEA message
-  if (send_nmea && nmea_delay >= 55) {
-    // get PPS time
-    time_t t_sec = pps_stamp.sec;
-    time_t t_nsec = pps_stamp.nsec;
-    int t_msec = round((float)t_nsec / 1000000);  // maintain msec precision
-
-    // create NMEA string
-    char millisec_now[4], time_now[7], date_now[7];
-    sprintf(millisec_now, "%d", t_msec);
-    sprintf(time_now, "%02i%02i%02i", hour(t_sec), minute(t_sec),
-            second(t_sec));
-    sprintf(date_now, "%02i%02i%02i", day(t_sec), month(t_sec),
-            year(t_sec) % 100);
-    String nmea_string = F("GPRMC,") + String(time_now) + "." +
-                         String(millisec_now) +
-                         F(",A,4365.107,N,79347.702,E,022.4,084.4,") +
-                         String(date_now) + ",003.1,W";
-    String chk = checksum(nmea_string);
-    nmea_string = "$" + nmea_string + "*" + chk + "\n";
-
-    // print NMEA string to serial as an NMEA message
-    GPSERIAL.print(nmea_string);
-
-    // reset send
-    send_nmea = false;
-
+  // ensure PPS width satisfied
+  if (send_nmea && nmea_delay >= PPS_PULSE_WIDTH) {
     // set PPS pin to low
     digitalWriteFast(PPS_PIN, LOW);
 
-    // DEBUG NMEA
-    // debugNMEA(nmea_string, t_sec, t_nsec);
+    // ensure min 50 ms width between end of PPS and start of NMEA message
+    if (nmea_delay >= PPS_NMEA_MIN_SEPARATION) {
+      // get PPS time
+      time_t t_sec = pps_stamp.sec;
+      time_t t_sec_gmt = t_sec - TIME_ZONE_OFFSET * 3600;
+
+      struct tm* timeinfo;
+      timeinfo = localtime(&t_sec_gmt);
+      nh.loginfo(asctime(timeinfo));
+
+      // create NMEA string
+      char time_now[7], date_now[7];
+      sprintf(time_now, "%02i%02i%02i", hour(t_sec_gmt), minute(t_sec_gmt),
+              second(t_sec_gmt));
+      sprintf(date_now, "%02i%02i%02i", day(t_sec_gmt), month(t_sec_gmt),
+              year(t_sec_gmt) % 100);
+      String nmea_string = F("GPRMC,") + String(time_now) +
+                           F(",A,4365.107,N,79347.702,E,022.4,084.4,") +
+                           String(date_now) + ",003.1,W";
+      String chk = checksum(nmea_string);
+      nmea_string = "$" + nmea_string + "*" + chk + "\n";
+
+      // print NMEA string to serial as an NMEA message
+      GPSERIAL.print(nmea_string);
+      nh.loginfo(nmea_string.c_str());  // DEBUG
+
+      // reset send
+      send_nmea = false;
+    }
   }
 
   if (cam_closed) {
-    cam_closed = false;
     cam_time_msg.time_ref = cam_stamp;
     cam_time_pub.publish(&cam_time_msg);
+    cam_closed = false;
   }
 
   if (imu_sampled) {
-    imu_sampled = false;
     imu_time_msg.time_ref = imu_stamp;
     imu_time_pub.publish(&imu_time_msg);
+    imu_sampled = false;
   }
 
   nh.spinOnce();
 }
 
-// Send NMEA interrupt
-void lidarISR(void) {
-  // get time of PPS
-  pps_stamp = nh.now();
+// Timestamp creation interrupts
+void ppsISR(void) {
+  // reset elapsed micro seconds
+  micros_since_pps = 0;
 
-  /* It's not really recommended to write to pins from an interrupt as it can
-   * take a relatively long time to execute. However, one of the main purposes
-   * of this code is to output accurate PPS signal and this is the most accurate
-   * way that abides by the format constraints on the signal. In testing, the
-   * default digitalWriteFast pulse width satisfies the 10 us - 200ms width
-   * required by the VLP16
-   */
-  digitalWriteFast(PPS_PIN, HIGH);
+  // get time of PPS
+  time_t pps_sec = rtc_get();
+  pps_stamp.sec = pps_sec;
+  pps_stamp.nsec = 0;
+  // nh.setNow(pps_stamp);
+  printROSTime("PPS Time:", pps_stamp);  // DEBUG
+
+  // toggle to HIGH
+  digitalToggleFast(PPS_PIN);
 
   // enable send and reset delay counter
   send_nmea = true;
   nmea_delay = 0;
 }
 
-// Timestamp creation interrupts
 void camISR(void) {
-  cam_stamp = nh.now();
+  cam_stamp.sec = pps_stamp.sec;
+  cam_stamp.nsec = micros_since_pps * 1000;
+  // cam_stamp = nh.now();
   cam_closed = true;
+  // printROSTime("CAM Time:", cam_stamp);  // DEBUG
 }
 
 void imuISR(void) {
-  imu_stamp = nh.now();
+  imu_stamp.sec = pps_stamp.sec;
+  imu_stamp.nsec = micros_since_pps * 1000;
+  // imu_stamp = nh.now();
   imu_sampled = true;
+  // printROSTime("IMU Time:", imu_stamp);  // DEBUG
 }
 
 // Computes XOR checksum of NMEA sentence
@@ -197,17 +208,20 @@ String checksum(String msg) {
   return result;
 }
 
-// Debug NMEA message creation by comparing to ROS time
-void debugNMEA(String& nmea_string, time_t& t_sec, time_t& t_nsec) {
+// Print for debugging
+void printROSTime(const String& msg, const ros::Time& ros_time) {
+  // get seconds and nano seconds
+  const time_t& t_sec = ros_time.sec;
+  const time_t& t_nsec = ros_time.nsec;
+
   // convert ros time to string
-  char t_sec_string[10], t_nsec_string[9];
+  char t_sec_string[11], t_nsec_string[10];
   sprintf(t_sec_string, "%lld", (long long)t_sec);
   sprintf(t_nsec_string, "%lld", (long long)t_nsec);
-  String ros_time_string = String(t_sec_string) + "." + String(t_nsec_string);
+  String ros_time_string =
+      "sec: " + String(t_sec_string) + " nsec:" + String(t_nsec_string);
 
-  // print NMEA summary
-  nh.loginfo("ROS time:");
+  // print
+  nh.loginfo(msg.c_str());
   nh.loginfo(ros_time_string.c_str());
-  nh.loginfo("NMEA string:");
-  nh.loginfo(nmea_string.c_str());
 }
