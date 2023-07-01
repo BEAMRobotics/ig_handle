@@ -9,7 +9,8 @@
 #define GPSERIAL Serial1  // LiDAR: GPS Serial Receive (White)
 #define PPS_PIN 2         // LiDAR: GPS Sync Pulse (Yellow)
 #define CAM_OUT 3         // Cam: Line 0 (Black)
-#define CAM_IN 4          // Cam: Line 1 (White)
+#define CAM_OPEN_IN 4     // Cam: Line 1 (White)
+#define CAM_CLOSE_IN 7    // Cam: Line 1 (White)
 #define IMU_OUT 8         // IMU: SynchIn (Blue)
 #define IMU_IN 9          // IMU: SynchOut (Pink)
 
@@ -36,8 +37,10 @@ ros::Publisher imu_time_pub("/imu/time", &imu_time_msg);
 // time-sync indicators
 elapsedMillis nmea_delay;
 elapsedMicros micros_since_pps;
-ros::Time pps_stamp, cam_stamp, imu_stamp;
-volatile bool send_nmea = false, cam_closed = false, imu_sampled = false;
+ros::Time pps_stamp, cam_mid_stamp, imu_stamp;
+unsigned long cam_open_t_sec, cam_mid_t_sec, cam_close_t_sec;
+unsigned long cam_open_t_nsec, cam_mid_t_nsec, cam_close_t_nsec;
+volatile bool send_nmea = false, cam_captured = false, imu_sampled = false;
 
 /*
  * Initial setup for the arduino sketch
@@ -68,13 +71,15 @@ void setup() {
   nh.advertise(imu_time_pub);
 
   // configure input and out pins
-  pinMode(CAM_IN, INPUT_PULLUP);
+  pinMode(CAM_OPEN_IN, INPUT_PULLUP);
+  pinMode(CAM_CLOSE_IN, INPUT_PULLUP);
   pinMode(CAM_OUT, OUTPUT);
   pinMode(IMU_IN, INPUT);
   pinMode(IMU_OUT, OUTPUT);
 
   // enable interrupts
-  attachInterrupt(digitalPinToInterrupt(CAM_IN), camISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM_OPEN_IN), camOpenISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(CAM_CLOSE_IN), camCloseISR, FALLING);
   attachInterrupt(digitalPinToInterrupt(IMU_IN), imuISR, RISING);
 
   // Note: We're using a PWM signal because it's a way of offloading
@@ -137,10 +142,10 @@ void loop() {
     }
   }
 
-  if (cam_closed) {
-    cam_time_msg.time_ref = cam_stamp;
+  if (cam_captured) {
+    cam_time_msg.time_ref = cam_mid_stamp;
     cam_time_pub.publish(&cam_time_msg);
-    cam_closed = false;
+    cam_captured = false;
   }
 
   if (imu_sampled) {
@@ -171,11 +176,31 @@ void ppsISR(void) {
   nmea_delay = 0;
 }
 
-void camISR(void) {
-  cam_stamp.sec = pps_stamp.sec;
-  cam_stamp.nsec = micros_since_pps * 1000;
-  cam_closed = true;
-  // printROSTime("CAM Time:", cam_stamp);  // DEBUG
+void camOpenISR(void) {
+  cam_open_t_sec = pps_stamp.sec;
+  cam_open_t_nsec = micros_since_pps * 1000;
+  // ros::Time cam_open_stamp(cam_open_t_sec, cam_open_t_nsec);  // DEBUG
+  // printROSTime("CAM OPN Time:", cam_open_stamp);              // DEBUG
+}
+
+void camCloseISR(void) {
+  cam_close_t_sec = pps_stamp.sec;
+  cam_close_t_nsec = micros_since_pps * 1000;
+
+  cam_mid_t_sec = cam_open_t_sec;
+  if (cam_close_t_nsec > cam_open_t_nsec) {
+    cam_mid_t_nsec = (cam_close_t_nsec + cam_open_t_nsec) * 0.5;
+  } else {
+    cam_mid_t_nsec = cam_open_t_nsec +
+                     0.5 * (cam_close_t_nsec + 1000000000 - cam_open_t_nsec);
+  }
+
+  ros::Time cam_mid_stamp_tmp(cam_mid_t_sec, cam_mid_t_nsec);
+  cam_mid_stamp = cam_mid_stamp_tmp;
+
+  // ros::Time cam_close_stamp(cam_close_t_sec, cam_close_t_nsec);  // DEBUG
+  // printROSTime("CAM MID Time:", cam_mid_stamp);                  // DEBUG
+  // printROSTime("CAM CLD Time:", cam_close_stamp);                // DEBUG
 }
 
 void imuISR(void) {
@@ -212,7 +237,7 @@ void printROSTime(const String& msg, const ros::Time& ros_time) {
   sprintf(t_sec_string, "%lld", (long long)t_sec);
   sprintf(t_nsec_string, "%lld", (long long)t_nsec);
   String ros_time_string =
-      "sec: " + String(t_sec_string) + " nsec:" + String(t_nsec_string);
+      "sec: " + String(t_sec_string) + " nsec: " + String(t_nsec_string);
 
   // print
   nh.loginfo(msg.c_str());
