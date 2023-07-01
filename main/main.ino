@@ -117,24 +117,24 @@ void loop() {
 
     // ensure min 50 ms width between end of PPS and start of NMEA message
     if (nmea_delay >= PPS_NMEA_MIN_SEPARATION) {
-      // get PPS time
+      // get PPS time and adjust to time zone
       const time_t t_sec_gmt = pps_stamp.sec - TIME_ZONE_OFFSET * 3600;
 
-      // create NMEA string
+      // create GPRMC sentence
       char time_now[7], date_now[7];
       sprintf(time_now, "%02i%02i%02i", hour(t_sec_gmt), minute(t_sec_gmt),
               second(t_sec_gmt));
       sprintf(date_now, "%02i%02i%02i", day(t_sec_gmt), month(t_sec_gmt),
               year(t_sec_gmt) % 100);
-      String nmea_string = F("GPRMC,") + String(time_now) +
-                           F(",A,4365.107,N,79347.702,E,022.4,084.4,") +
-                           String(date_now) + ",003.1,W";
-      String chk = checksum(nmea_string);
-      nmea_string = "$" + nmea_string + "*" + chk + "\n";
+      String gprmc_sentence = F("GPRMC,") + String(time_now) +
+                              F(",A,4365.107,N,79347.702,E,022.4,084.4,") +
+                              String(date_now) + ",003.1,W";
+      String chk = checksum(gprmc_sentence);
+      gprmc_sentence = "$" + gprmc_sentence + "*" + chk + "\n";
 
-      // print NMEA string to serial as an NMEA message
-      GPSERIAL.print(nmea_string);
-      // nh.loginfo(nmea_string.c_str());  // DEBUG
+      // print GPRMC sentence to serial as an NMEA message
+      GPSERIAL.print(gprmc_sentence);
+      // nh.loginfo(gprmc_sentence.c_str());  // DEBUG
 
       // reset send
       send_nmea = false;
@@ -158,10 +158,10 @@ void loop() {
 
 // Timestamp creation interrupts
 void ppsISR(void) {
-  // reset elapsed micro seconds
+  // reset elapsed microseconds
   micros_since_pps = 0;
 
-  // get time of PPS
+  // set time of PPS according to RTC clock
   const time_t pps_sec = rtc_get();
   pps_stamp.sec = pps_sec;
   pps_stamp.nsec = 0;
@@ -186,12 +186,12 @@ void camCloseISR(void) {
   cam_close_t_sec = pps_stamp.sec;
   cam_close_t_nsec = micros_since_pps * 1000;
 
+  // set camera capture time to midway between shutter open and close
   cam_mid_t_sec = cam_open_t_sec;
-  if (cam_close_t_nsec > cam_open_t_nsec) {
-    cam_mid_t_nsec = (cam_close_t_nsec + cam_open_t_nsec) * 0.5;
-  } else {
-    cam_mid_t_nsec = cam_open_t_nsec +
-                     0.5 * (cam_close_t_nsec + 1000000000 - cam_open_t_nsec);
+  cam_mid_t_nsec = (cam_close_t_nsec + cam_open_t_nsec) * 0.5;
+  if (cam_close_t_nsec < cam_open_t_nsec) {
+    cam_mid_t_nsec =
+        cam_open_t_nsec + 0.5 * (cam_close_t_nsec + 1E9 - cam_open_t_nsec);
   }
 
   const ros::Time cam_mid_stamp_tmp(cam_mid_t_sec, cam_mid_t_nsec);
@@ -209,7 +209,7 @@ void imuISR(void) {
   // printROSTime("IMU Time:", imu_stamp);  // DEBUG
 }
 
-// Computes XOR checksum of NMEA sentence
+// Computes XOR checksum of GPRMC sentence
 String checksum(String msg) {
   byte chksum = 0;
   int l = msg.length();
