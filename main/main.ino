@@ -14,7 +14,7 @@
 #define IMU_OUT 8         // IMU: SynchIn (Blue)
 #define IMU_IN 9          // IMU: SynchOut (Pink)
 
-// PPS/GPRMC times-synch
+// PPS/GPRMC time-synch
 constexpr int BAUD_RATE = 9600;              // baud/s
 constexpr int PPS_PULSE_WIDTH = 20;          // ms
 constexpr int PPS_NMEA_MIN_SEPARATION = 55;  // ms
@@ -105,9 +105,9 @@ void setup() {
 /*
  * Main loop
  * This function:
- *  - Transmits NMEA message over GPSERIAL
- *  - Triggers camera line and publishes the timestamp to /cam_time
- *  - Publishes the timestamp of IMU capture to /imu_time
+ *  - Transmits NMEA messages over GPSERIAL
+ *  - Publishes the camera capture timestamp to /cam_time
+ *  - Publishes the IMU sample timestamp to /imu_time
  */
 void loop() {
   // ensure PPS width satisfied
@@ -118,8 +118,7 @@ void loop() {
     // ensure min 50 ms width between end of PPS and start of NMEA message
     if (nmea_delay >= PPS_NMEA_MIN_SEPARATION) {
       // get PPS time
-      const time_t& t_sec = pps_stamp.sec;
-      const time_t t_sec_gmt = t_sec - TIME_ZONE_OFFSET * 3600;
+      const time_t t_sec_gmt = pps_stamp.sec - TIME_ZONE_OFFSET * 3600;
 
       // create NMEA string
       char time_now[7], date_now[7];
@@ -195,7 +194,7 @@ void camCloseISR(void) {
                      0.5 * (cam_close_t_nsec + 1000000000 - cam_open_t_nsec);
   }
 
-  ros::Time cam_mid_stamp_tmp(cam_mid_t_sec, cam_mid_t_nsec);
+  const ros::Time cam_mid_stamp_tmp(cam_mid_t_sec, cam_mid_t_nsec);
   cam_mid_stamp = cam_mid_stamp_tmp;
 
   // ros::Time cam_close_stamp(cam_close_t_sec, cam_close_t_nsec);  // DEBUG
