@@ -29,7 +29,7 @@ def topic_to_dict(bag: rosbag.Bag, topics, type="msg") -> dict:
                 array.append(t)
             else:
                 warnings.warn(
-                    f"{type} must be either ""msg"" or ""t""", Warning)
+                    f"{type} must be either ""msg"" or ""t"".", Warning)
                 continue
 
         dictionary[i] = array
@@ -52,7 +52,12 @@ def restamp(bag, outbag, data_topics, time_topics):
     for i, topic in enumerate(data_topics):
         if len(messages_msg[i]) == 0:
             warnings.warn(
-                f"{topic} contains no messages and will not be restamped", Warning)
+                f"{topic} contains no messages and will not be restamped.", Warning)
+            continue
+
+        if len(stamps_msg[i]) == 0:
+            warnings.error(
+                f"{topic} contains no stamps. Data collection is corrupt.", Warning)
             continue
 
         while messages_t[i][0] < stamps_t[i][0]:
@@ -61,7 +66,7 @@ def restamp(bag, outbag, data_topics, time_topics):
                 messages_t[i].pop(0)
             except:
                 warnings.warn(
-                    f"All messages on {topic} are recorded before their associated time topic and will not be restamped", Warning)
+                    f"All messages on {topic} are recorded before their associated time topic and will not be restamped.", Warning)
 
     # associate stamps with messages assuming first-in-first-out queue (i.e no signal dropout)
     for i, topic in enumerate(data_topics):
