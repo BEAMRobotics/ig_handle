@@ -196,6 +196,7 @@ void camCloseISR(void) {
 
   const ros::Time cam_mid_stamp_tmp(cam_mid_t_sec, cam_mid_t_nsec);
   cam_mid_stamp = cam_mid_stamp_tmp;
+  cam_captured = true;
 
   // ros::Time cam_close_stamp(cam_close_t_sec, cam_close_t_nsec);  // DEBUG
   // printROSTime("CAM MID Time:", cam_mid_stamp);                  // DEBUG
