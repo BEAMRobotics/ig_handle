@@ -1,0 +1,28 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp2s0:
+      addresses:
+        - 192.168.1.150/24
+      routes:
+        - to: 0.0.0.0/0
+          via: 192.168.1.1
+          table: 101
+      routing-policy:
+        - from: 192.168.1.0/24
+          table: 101
+      nameservers:
+          addresses: [8.8.8.1, 1.1.1.1]
+    enx000fc910b495:
+      addresses:
+        - 192.168.0.4/24
+      routes:
+        - to: 0.0.0.0/0
+          via: 192.168.0.1
+          table: 102
+      routing-policy:
+        - from: 192.168.0.0/24
+          table: 102
+      nameservers:
+          addresses: [8.8.8.1, 1.1.1.1]

@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>ig_handle</name>
-    <version>0.0.3</version>
-    <description>This package contains all necessary code to operate ig_handle.</description>
-    <maintainer email="gearle@uwaterloo.ca">Gabe Earle</maintainer>
+    <version>1.0.0</version>
+    <description>ig-handle: a handheld inspector gadget</description>
     <license>BSD</license>
     <author>gearle@uwaterloo.ca</author>
+    <maintainer email="adthoms@ucla.edu">Alex Thoms</maintainer>
+    <maintainer email="gearle@uwaterloo.ca">Gabe Earle</maintainer>
 
     <buildtool_depend>catkin</buildtool_depend>
 
     <depend>roscpp</depend>
-    <depend>nodelet</depend>
     <depend>std_msgs</depend>
     <depend>sensor_msgs</depend>
 </package>
