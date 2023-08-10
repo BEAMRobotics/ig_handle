@@ -68,6 +68,14 @@ def restamp(bag, outbag, data_topics, time_topics):
                 warnings.warn(
                     f"All messages on {topic} are recorded before their associated time topic and will not be restamped.", Warning)
 
+        num_stamps = len(stamps_msg[i])
+        num_messages = len(messages_msg[i])
+        stamp_difference = abs(num_stamps - num_messages)
+        if (stamp_difference > 1):
+            warnings.error(
+                f"{topic} contains {num_stamps} stamps and {num_messages} messages. There was signal dropout during data collection and the data is corrupt.", Warning)
+            continue
+
     # associate stamps with messages assuming first-in-first-out queue (i.e no signal dropout)
     for i, topic in enumerate(data_topics):
         for j in range(len(messages_msg[i])):
