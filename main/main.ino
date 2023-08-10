@@ -1,5 +1,7 @@
 #include <ros.h>
 #include <sensor_msgs/TimeReference.h>
+
+#include <RTClib.h>
 #include <TeensyTimerTool.h>
 #include <TimeLib.h>
 
@@ -7,12 +9,13 @@
 
 // Electrical component pin numbers
 #define GPSERIAL Serial1  // LiDAR: GPS Serial Receive (White)
-#define PPS_PIN 2         // LiDAR: GPS Sync Pulse (Yellow)
-#define CAM_OUT 3         // Cam: Line 0 (Black)
-#define CAM_OPEN_IN 4     // Cam: Line 1 (White)
-#define CAM_CLOSE_IN 7    // Cam: Line 1 (White)
-#define IMU_OUT 8         // IMU: SynchIn (Blue)
-#define IMU_IN 9          // IMU: SynchOut (Pink)
+#define PPS_SYNCH 2       // LiDAR: GPS Sync Pulse (Yellow)
+#define PPS_IN 3          // RTC: PPS Signal (SQW)
+#define CAM_OUT 4         // Cam: Line 0 (Black)
+#define CAM_OPEN_IN 5     // Cam: Line 1 (White)
+#define CAM_CLOSE_IN 6    // Cam: Line 1 (White)
+#define IMU_OUT 7         // IMU: SynchIn (Blue)
+#define IMU_IN 8          // IMU: SynchOut (Pink)
 
 // PPS/GPRMC time-synch
 constexpr int BAUD_RATE = 9600;              // baud/s
@@ -28,6 +31,9 @@ ros::NodeHandle nh;
 // microcontroller clock
 PeriodicTimer teensy_clock(TCK_RTC);
 
+// PPS signal source
+RTC_DS3231 rtc;
+
 // messages and time topics for camera and imu
 sensor_msgs::TimeReference cam_time_msg;
 sensor_msgs::TimeReference imu_time_msg;
@@ -35,6 +41,7 @@ ros::Publisher cam_time_pub("/cam/time", &cam_time_msg);
 ros::Publisher imu_time_pub("/imu/time", &imu_time_msg);
 
 // time-sync indicators
+volatile time_t rtc_time;
 elapsedMillis nmea_delay;
 elapsedMicros micros_since_pps;
 ros::Time pps_stamp, cam_mid_stamp, imu_stamp;
@@ -43,13 +50,13 @@ unsigned long cam_open_t_nsec, cam_mid_t_nsec, cam_close_t_nsec;
 volatile bool send_nmea = false, cam_captured = false, imu_sampled = false;
 
 /*
- * Initial setup for the arduino sketch
- * This function:
- *  - Configures timers for LiDAR PPS and camera triggering
- *  - Advertises and subscribes to ROS topics
- *  - UART Serial setup for NMEA messages
- *  - Holds until rosserial is connected
- */
+   Initial setup for the arduino sketch
+   This function:
+    - Configures timers for LiDAR PPS and camera triggering
+    - Advertises and subscribes to ROS topics
+    - UART Serial setup for NMEA messages
+    - Holds until rosserial is connected
+*/
 void setup() {
   /* Lidar */
 
@@ -57,11 +64,8 @@ void setup() {
   // transmission
   GPSERIAL.begin(BAUD_RATE, SERIAL_8N1_TXINV);
 
-  // set PPS pin
-  pinMode(PPS_PIN, OUTPUT);
-
-  // begin clock and call ppsISR every second
-  teensy_clock.begin(ppsISR, 1'000'000);
+  // set PPS synch pin
+  pinMode(PPS_SYNCH, OUTPUT);
 
   /* Camera and IMU */
 
@@ -70,7 +74,7 @@ void setup() {
   nh.advertise(cam_time_pub);
   nh.advertise(imu_time_pub);
 
-  // configure input and out pins
+  // configure input and output pins
   pinMode(CAM_OPEN_IN, INPUT_PULLUP);
   pinMode(CAM_CLOSE_IN, INPUT_PULLUP);
   pinMode(CAM_OUT, OUTPUT);
@@ -82,12 +86,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(CAM_CLOSE_IN), camCloseISR, FALLING);
   attachInterrupt(digitalPinToInterrupt(IMU_IN), imuISR, RISING);
 
-  // Note: We're using a PWM signal because it's a way of offloading
-  //       the task to free up the main loop. The base frequency for
-  //       the PWM signal is 20.0 Hz
+  // set write frequency
   analogWriteFrequency(CAM_OUT, 20.0);
-
-  // ensure pin is low before we send a rising edge
   digitalWrite(IMU_OUT, LOW);
 
   // await node handle time sync
@@ -96,24 +96,43 @@ void setup() {
   }
 
   // enable triggers
-  nh.loginfo("Setup complete, Enabling triggers.");
-  analogWrite(CAM_OUT, 5);  // 5% duty cycle @ 20 Hz = 2.5 ms pulse
+  analogWrite(CAM_OUT, 5);
   digitalWrite(IMU_OUT, HIGH);
-  nh.loginfo("Triggers enabled.");
+
+  /* RTC */
+
+  // initialize
+  if (!rtc.begin()) {
+    nh.loginfo("Couldn't find RTC");
+    while (1) delay(10);
+  }
+  rtc.disable32K();
+
+  // set PPS input pin and write signal
+  pinMode(PPS_IN, INPUT_PULLUP);
+  rtc.writeSqwPinMode(DS3231_SquareWave1Hz);
+
+  // enable interrupt
+  attachInterrupt(digitalPinToInterrupt(PPS_IN), ppsISR, RISING);
+
+  // set time counter
+  rtc_time = rtc_get();
+  // ros::Time rtc_time_stamp(rtc_time, 0);         // DEBUG
+  // printROSTime("Teensy Time:", rtc_time_stamp);  // DEBUG
 }
 
 /*
- * Main loop
- * This function:
- *  - Transmits NMEA messages over GPSERIAL
- *  - Publishes the camera capture timestamp to /cam_time
- *  - Publishes the IMU sample timestamp to /imu_time
- */
+   Main loop
+   This function:
+    - Transmits NMEA messages over GPSERIAL
+    - Publishes the camera capture timestamp to /cam_time
+    - Publishes the IMU sample timestamp to /imu_time
+*/
 void loop() {
   // ensure PPS width satisfied
   if (send_nmea && nmea_delay >= PPS_PULSE_WIDTH) {
     // set PPS pin to low
-    digitalWriteFast(PPS_PIN, LOW);
+    digitalWriteFast(PPS_SYNCH, LOW);
 
     // ensure min 50 ms width between end of PPS and start of NMEA message
     if (nmea_delay >= PPS_NMEA_MIN_SEPARATION) {
@@ -162,15 +181,15 @@ void ppsISR(void) {
   micros_since_pps = 0;
 
   // set time of PPS according to RTC clock
-  const time_t pps_sec = rtc_get();
-  pps_stamp.sec = pps_sec;
+  pps_stamp.sec = rtc_time;
   pps_stamp.nsec = 0;
   // printROSTime("PPS Time:", pps_stamp);  // DEBUG
 
   // toggle to HIGH
-  digitalToggleFast(PPS_PIN);
+  digitalToggleFast(PPS_SYNCH);
 
-  // enable send and reset delay counter
+  // increment time, enable send, and reset delay counter
+  rtc_time++;
   send_nmea = true;
   nmea_delay = 0;
 }
