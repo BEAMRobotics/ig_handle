@@ -9,7 +9,7 @@
 
 // Electrical component pin numbers
 #define GPSERIAL Serial1  // LiDAR: GPS Serial Receive (White)
-#define PPS_SYNCH 2       // LiDAR: GPS Sync Pulse (Yellow)
+#define PPS_OUT 2         // LiDAR: GPS Sync Pulse (Yellow)
 #define PPS_IN 3          // RTC: PPS Signal (SQW)
 #define CAM_OUT 4         // Cam: Line 0 (Black)
 #define CAM_OPEN_IN 5     // Cam: Line 1 (White)
@@ -65,7 +65,7 @@ void setup() {
   GPSERIAL.begin(BAUD_RATE, SERIAL_8N1_TXINV);
 
   // set PPS synch pin
-  pinMode(PPS_SYNCH, OUTPUT);
+  pinMode(PPS_OUT, OUTPUT);
 
   /* Camera and IMU */
 
@@ -132,7 +132,7 @@ void loop() {
   // ensure PPS width satisfied
   if (send_nmea && nmea_delay >= PPS_PULSE_WIDTH) {
     // set PPS pin to low
-    digitalWriteFast(PPS_SYNCH, LOW);
+    digitalWriteFast(PPS_OUT, LOW);
 
     // ensure min 50 ms width between end of PPS and start of NMEA message
     if (nmea_delay >= PPS_NMEA_MIN_SEPARATION) {
@@ -186,7 +186,7 @@ void ppsISR(void) {
   // printROSTime("PPS Time:", pps_stamp);  // DEBUG
 
   // toggle to HIGH
-  digitalToggleFast(PPS_SYNCH);
+  digitalToggleFast(PPS_OUT);
 
   // increment time, enable send, and reset delay counter
   rtc_time++;
@@ -213,8 +213,8 @@ void camCloseISR(void) {
         cam_open_t_nsec + 0.5 * (cam_close_t_nsec + 1E9 - cam_open_t_nsec);
   }
 
-  const ros::Time cam_mid_stamp_tmp(cam_mid_t_sec, cam_mid_t_nsec);
-  cam_mid_stamp = cam_mid_stamp_tmp;
+  cam_mid_stamp.sec = cam_mid_t_sec;
+  cam_mid_stamp.nsec = cam_mid_t_nsec;
   cam_captured = true;
 
   // ros::Time cam_close_stamp(cam_close_t_sec, cam_close_t_nsec);  // DEBUG
