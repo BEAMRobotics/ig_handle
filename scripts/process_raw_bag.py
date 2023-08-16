@@ -5,19 +5,19 @@ import os
 import warnings
 
 
-def topic_to_dict(bag: rosbag.Bag, topics, type="msg") -> dict:
+def topic_to_dict(bag: rosbag.Bag, topics: list, type="msg") -> dict:
     """
     Return dictionary containing topics
 
     Args:
         bag (rosbag.Bag): rosbag
-        topics (array): topics
+        topics (list): topics
         type (string): type of information to store
-          "t" stored serialization time
+          "t" stores serialization time
           "msg" stores messages
 
     Returns:
-        dictionary (dict): keys are monotonically increasing, values are topic arrays
+        dictionary (dict): keys are monotonically increasing, values are topic lists
     """
     dictionary = dict()
     for i, topic in enumerate(topics):
@@ -31,13 +31,25 @@ def topic_to_dict(bag: rosbag.Bag, topics, type="msg") -> dict:
                 warnings.warn(
                     f"{type} must be either ""msg"" or ""t"".", Warning)
                 continue
-
         dictionary[i] = array
+
     return dictionary
 
 
-def restamp(bag, outbag, data_topics, time_topics):
-    # ensure each data topic has a time topics
+def restamp(bag: rosbag.Bag, data_topics: list, time_topics: list) -> rosbag.Bag:
+    """
+    from bag, restamp data_topics with time reference from time_topics and write to outbag
+
+    Args:
+        bag (rosbag.Bag): rosbag containing data and time topics
+        data_topics (list): data topics
+        time_topics (list): time topics
+
+    Returns:
+        outbag (rosbag.Bag): rosbag containing restamped topics
+    """
+
+    # ensure each data topic has a time topic
     if (len(data_topics) != len(time_topics)):
         raise Exception(
             "Length of time and data topic arguments is not the same.")
@@ -70,15 +82,19 @@ def restamp(bag, outbag, data_topics, time_topics):
 
         num_stamps = len(stamps_msg[i])
         num_messages = len(messages_msg[i])
-        stamp_difference = abs(num_stamps - num_messages)
-        if (stamp_difference > 1):
-            warnings.error(
+        if (abs(num_stamps - num_messages) > 1):
+            warnings.warn(
                 f"{topic} contains {num_stamps} stamps and {num_messages} messages. There was signal dropout during data collection and the data is corrupt.", Warning)
             continue
 
+    # create output bag
+    outfolder = os.path.dirname(bag.filename)
+    outfile = os.path.join(outfolder, "output.bag")
+    outbag = rosbag.Bag(outfile, "w")
+
     # associate stamps with messages assuming first-in-first-out queue (i.e no signal dropout)
     for i, topic in enumerate(data_topics):
-        for j in range(len(messages_msg[i])):
+        while len(messages_msg[i]) > 0:
             try:
                 time_msg = stamps_msg[i].pop(0)
                 data_msg = messages_msg[i].pop(0)
@@ -87,8 +103,9 @@ def restamp(bag, outbag, data_topics, time_topics):
                               str(data_msg.header.seq) + ": ran out of timestamps.", Warning)
                 continue
 
+            serialization_stamp = data_msg.header.stamp
             data_msg.header.stamp = time_msg.time_ref
-            outbag.write(topic, data_msg, time_msg.time_ref)
+            outbag.write(topic, data_msg, serialization_stamp)
 
     # write remaining topics
     for topic, msg, t in bag.read_messages():
@@ -101,26 +118,20 @@ def restamp(bag, outbag, data_topics, time_topics):
 def main(args):
     parser = argparse.ArgumentParser(
         description='This script is used to post-process a raw bag from ig_handle. Currently, this only restamps topics with their appropriate reference times.')
-
     parser.add_argument('-b', '--bag', help='input bag file', required=True)
     parser.add_argument(
         '-d', '--data_topics', nargs='+', help='whitespace separated list of sensor message topics', default=["/imu/data", "/F1/image_raw/compressed", "/F2/image_raw/compressed", "/F3/image_raw/compressed", "/F4/image_raw/compressed"])
     parser.add_argument(
         '-t', '--time_topics', nargs='+', help='whitespace separated list of time reference topics', default=["/imu/time", "/cam/time", "/cam/time", "/cam/time", "/cam/time"])
 
+    # parse args
     args = parser.parse_args()
-
     bag = rosbag.Bag(args.bag)
-    folder = os.path.dirname(args.bag)
-    outfile = os.path.join(folder, "output.bag")
-    outbag = rosbag.Bag(outfile, "w")
-
     time_topics = args.time_topics
     data_topics = args.data_topics
 
     # pair and restamp data/time message couples
-    outbag = restamp(bag, outbag, data_topics, time_topics)
-
+    outbag = restamp(bag, data_topics, time_topics)
     outbag.close()
 
 
