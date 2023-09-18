@@ -2,7 +2,6 @@
 #include <sensor_msgs/TimeReference.h>
 
 #include <RTClib.h>
-#include <TeensyTimerTool.h>
 #include <TimeLib.h>
 
 #define USE_USBCON
@@ -23,31 +22,29 @@ constexpr int PPS_PULSE_WIDTH = 20;          // ms
 constexpr int PPS_NMEA_MIN_SEPARATION = 55;  // ms
 constexpr int TIME_ZONE_OFFSET = -7;         // hr from UTC (User Set)
 
-using namespace TeensyTimerTool;
-
 // ROS nodehandle
 ros::NodeHandle nh;
-
-// microcontroller clock
-PeriodicTimer teensy_clock(TCK_RTC);
 
 // PPS signal source
 RTC_DS3231 rtc;
 
 // messages and time topics for camera and imu
+sensor_msgs::TimeReference pps_time_msg;
 sensor_msgs::TimeReference cam_time_msg;
 sensor_msgs::TimeReference imu_time_msg;
+ros::Publisher pps_time_pub("/pps/time", &pps_time_msg);
 ros::Publisher cam_time_pub("/cam/time", &cam_time_msg);
 ros::Publisher imu_time_pub("/imu/time", &imu_time_msg);
 
 // time-sync indicators
-volatile time_t rtc_time;
+time_t rtc_time{0};
 elapsedMillis nmea_delay;
 elapsedMicros micros_since_pps;
 ros::Time pps_stamp, cam_mid_stamp, imu_stamp;
 unsigned long cam_open_t_sec, cam_mid_t_sec, cam_close_t_sec;
 unsigned long cam_open_t_nsec, cam_mid_t_nsec, cam_close_t_nsec;
-volatile bool send_nmea = false, cam_captured = false, imu_sampled = false;
+volatile bool pub_pps_time = false, send_nmea = false;
+volatile bool cam_captured = false, imu_sampled = false;
 
 /*
    Initial setup for the arduino sketch
@@ -71,8 +68,12 @@ void setup() {
 
   // node initialization
   nh.initNode();
+  nh.advertise(pps_time_pub);
   nh.advertise(cam_time_pub);
   nh.advertise(imu_time_pub);
+  while (!nh.connected()) {
+    nh.spinOnce();
+  }
 
   // configure input and output pins
   pinMode(CAM_OPEN_IN, INPUT_PULLUP);
@@ -89,11 +90,6 @@ void setup() {
   // set write frequency
   analogWriteFrequency(CAM_OUT, 20.0);
   digitalWrite(IMU_OUT, LOW);
-
-  // await node handle time sync
-  while (!nh.connected()) {
-    nh.spinOnce();
-  }
 
   // enable triggers
   analogWrite(CAM_OUT, 5);
@@ -114,11 +110,6 @@ void setup() {
 
   // enable interrupt
   attachInterrupt(digitalPinToInterrupt(PPS_IN), ppsISR, RISING);
-
-  // set time counter
-  rtc_time = rtc_get();
-  // ros::Time rtc_time_stamp(rtc_time, 0);         // DEBUG
-  // printROSTime("Teensy Time:", rtc_time_stamp);  // DEBUG
 }
 
 /*
@@ -129,6 +120,12 @@ void setup() {
     - Publishes the IMU sample timestamp to /imu_time
 */
 void loop() {
+  // publish PPS time as a reference for soft-synch
+  if (pub_pps_time) {
+    pps_time_pub.publish(&pps_time_msg);
+    pub_pps_time = false;
+  }
+
   // ensure PPS width satisfied
   if (send_nmea && nmea_delay >= PPS_PULSE_WIDTH) {
     // set PPS pin to low
@@ -177,6 +174,13 @@ void loop() {
 
 // Timestamp creation interrupts
 void ppsISR(void) {
+  // set RTC time in interrupt for correct ROS time
+  if (rtc_time == 0) {
+    rtc_time = nh.now().toSec();
+    // ros::Time rtc_time_stamp(rtc_time, 0);            // DEBUG
+    // printROSTime("RTC Start Time:", rtc_time_stamp);  // DEBUG
+  }
+
   // reset elapsed microseconds
   micros_since_pps = 0;
 
@@ -185,13 +189,19 @@ void ppsISR(void) {
   pps_stamp.nsec = 0;
   // printROSTime("PPS Time:", pps_stamp);  // DEBUG
 
+  // set time of PPS time reference with respect to ROS time
+  pps_time_msg.header.seq = rtc_time;
+  pps_time_msg.header.stamp = nh.now();
+  pps_time_msg.time_ref = pps_stamp;
+
   // toggle to HIGH
   digitalToggleFast(PPS_OUT);
 
-  // increment time, enable send, and reset delay counter
-  rtc_time++;
-  send_nmea = true;
-  nmea_delay = 0;
+  // counters and resets
+  rtc_time++;           // increment time
+  pub_pps_time = true;  // enable pps time ref publication
+  send_nmea = true;     // enable nmea send
+  nmea_delay = 0;       // reset delay counter
 }
 
 void camOpenISR(void) {
