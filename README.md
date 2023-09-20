@@ -96,24 +96,27 @@ Further, **pierre** records `/DT100/sonar_scans` topics of message type `sensor_
 
 Raw data is processed using `process_raw_bag.py` found in `ig_handle/scripts/`. Its description and interface follows.
 
-**Description**: This script restamps camera and IMU sensor messages with their appropriate time reference messages as per the DS3231 RTC clock. Acknowledging camera and IMU sensor messages (i.e. `sensor_msgs/CompressedImage` and `sensor_msgs/Imu`) take longer to serialize than time reference messages (i.e. `/cam/time` and `/imu/time`), the script discards camera and IMU sensor messages before the first time reference (based on serialized time) and then proceeds to restamp sensor messages with time references using a first-in-first-out queue. In testing, we observe no camera and IMU signal dropout, permitting such a simple offline time-synchronization strategy. This script throws an error when signal drop-out is detected, which may happen if connections become loose. This script also re-serializes every message to its header timestamp.
+**Description**: This script:
+1. restamps camera and IMU sensor messages with their appropriate time reference messages
+2. interpolates sonar messages with a reference PPS signal
+Acknowledging camera and IMU sensor messages (i.e. `sensor_msgs/CompressedImage` and `sensor_msgs/Imu`) take longer to serialize than time reference messages (i.e. `/cam/time` and `/imu/time`), the script discards camera and IMU sensor messages before the first time reference (based on serialized time) and then proceeds to restamp sensor messages with time references using a first-in-first-out queue. In testing, we observe no camera and IMU signal dropout for periods typical for data collection (i.e. 5-10 min), permitting such a simple offline time-synchronization strategy. This script throws an error when signal dropout is detected, which may happen if connections become loose. Sometimes, dropout occurs after an extended period of data collection, and we provide an argument `-dur` to allow the user to process the bag *before* this dropout occurs (to see where dropout occurs, use `rosrun rqt_bag rqt_bag` to visualize the raw bag `raw.bag`).
 
 **Interface**: The script's interface is accessed via:
 ```
 cd ~/catkin_ws/src/ig_handle/scripts
 python3 process_raw_bag.py --help
 ```
-The bagfile argument `-b` needs to be set every time to find the input bag. The values for data and time topics `-d, -t` are set correctly by default, so only specify those arguments if you've changed the data collection process. Below is an example of how to process collected raw data:
+The bagfile argument `-b` needs to be set every time to find the input bag. The values for data and time topics `-dr, -tr, -di, -ti` are set correctly by default, so only specify those arguments if you've changed the data collection process. Below is an example of how to process collected raw data:
 ```
 cd ~/catkin_ws/src/ig_handle/scripts
 python3 process_raw_bag.py -b ~/bags/YYYY_MM_DD_HH_MM_SS/raw.bag
 ```
-The script will output a rosbag called `output.bag` to the same folder specified via the `-b` argument, which can then be passed to a SLAM algorithm. Note that in testing, we observe a warm-up time of approximately 5 seconds is required for the LiDAR to synch with the RTC, and therefore recommend: 
+The script will output a rosbag called `output.bag` to the same folder specified via the `-b` argument, which can then be passed to a SLAM algorithm. Note that in testing, we observe that a warm-up time of ~5 seconds is required for the LiDAR to synch with the RTC, and therefore recommend:
 ```
 cd ~/bags/YYYY_MM_DD_HH_MM_SS/
 rosbag play --start=5 output.bag --pause
 ```
-pressing the `enter` key will then playback the bag for the SLAM algorithm.
+when playing back the bag for the SLAM algorithm. Pressing the `enter` key will then continue playback.
 
 ## Documentation
 
