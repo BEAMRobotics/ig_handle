@@ -1,3 +1,5 @@
 <launch>
-    <include file="$(find dt100_driver)/launch/dt100_driver.launch" />
+  <include file="$(find dt100_driver)/launch/dt100_driver.launch">
+    <arg name="bridge_adapter" default="enx000fc910b497" />
+  </include>
 </launch>

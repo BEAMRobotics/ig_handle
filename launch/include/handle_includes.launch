@@ -1,5 +1,5 @@
 <launch>
-  <!-- Start ros serial -->
+  <!-- Start rosserial -->
   <include file="$(find ig_handle)/launch/include/start_rosserial.launch" />
 
   <!-- Start lidar -->

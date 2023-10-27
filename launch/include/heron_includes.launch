@@ -1,14 +1,14 @@
 <launch>
-  <!-- Start handle --> 
+  <!-- Start handle -->
   <include file="$(find ig_handle)/launch/include/handle_includes.launch" />
 
-  <!-- Start sonar -->
-  <include file="$(find dt100_driver)/launch/dt100_driver.launch" />
-  
   <!-- Start lidar -->
   <include file="$(find ig_handle)/launch/include/start_lidar_v.launch"/>
 
   <!-- Start cameras -->
   <include file="$(find ig_handle)/launch/include/start_cam_F3.launch" />
   <include file="$(find ig_handle)/launch/include/start_cam_F4.launch" />
+
+  <!-- Start sonar -->
+  <include file="$(find ig_handle)/launch/include/start_sonar.launch" />
 </launch>

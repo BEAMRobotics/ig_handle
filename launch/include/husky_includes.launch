@@ -1,8 +1,5 @@
 <launch>
-  <!-- Start husky -->
-  <include file="$(find ig_handle)/launch/include/start_husky.launch" />
-
-  <!-- Start handle --> 
+  <!-- Start handle -->
   <include file="$(find ig_handle)/launch/include/handle_includes.launch" />
 
   <!-- Start lidar -->
@@ -11,6 +8,9 @@
   <!-- Start cameras -->
   <include file="$(find ig_handle)/launch/include/start_cam_F3.launch" />
   <include file="$(find ig_handle)/launch/include/start_cam_F4.launch" />
+
+  <!-- Start husky -->
+  <include file="$(find ig_handle)/launch/include/start_husky.launch" />
 
   <!-- Start thermal -->
   <!-- <include file="$(find ig_handle)/launch/include/start_cam_thermal.launch" /> -->
