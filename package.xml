@@ -4,13 +4,10 @@
     <version>1.0.0</version>
     <description>ig-handle: a handheld inspector gadget</description>
     <license>BSD</license>
+    <author>adthoms@ucla.edu</author>
     <author>gearle@uwaterloo.ca</author>
     <maintainer email="adthoms@ucla.edu">Alex Thoms</maintainer>
     <maintainer email="gearle@uwaterloo.ca">Gabe Earle</maintainer>
 
     <buildtool_depend>catkin</buildtool_depend>
-
-    <depend>roscpp</depend>
-    <depend>std_msgs</depend>
-    <depend>sensor_msgs</depend>
 </package>
