@@ -2,7 +2,7 @@ network:
   version: 2
   renderer: networkd
   ethernets:
-    enp2s0:
+    enp2s0: # LiDAR network
       addresses:
         - 192.168.1.150/24
       routes:
@@ -14,7 +14,7 @@ network:
           table: 101
       nameservers:
           addresses: [8.8.8.1, 1.1.1.1]
-    enx000fc910b497:
+    enx000fc910b497: # Sonar network
       addresses:
         - 192.168.0.4/24
       routes:
