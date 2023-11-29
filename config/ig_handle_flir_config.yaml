@@ -1,20 +1,19 @@
+# Flir Camera Config
+#
+# See flir_camera_driver/spinnaker_camera_driver/cfg/Spinnaker.cfg v0.2.5
+# for parameter descriptions and default values
+
+# Trigger parameters
 enable_trigger: 'On'
-line_mode: 'Output'
-line_selector: 'Line1'
-line_source: 'ExposureActive'
-trigger_activation_mode: 'RisingEdge'
 trigger_selector: 'FrameStart'
+trigger_activation_mode: 'RisingEdge'
 trigger_source: 'Line0'
 trigger_overlap_mode: 'ReadOut'
-acquisition_frame_rate_enable: false
-isp_enable: false
+line_source: 'ExposureActive'
+line_selector: 'Line1'
+line_mode: 'Output'
 
-image_format_color_coding: Mono8
-auto_sharpness: true
-gamma_enable: false
+# Image parameters
 auto_white_balance: Continuous
-exposure_mode: 'Timed'
-exposure_auto: 'Continuous'
-auto_exposure_time_upper_limit: 24000 # increase until frame rate drops
-
-timeout: 1000
+image_format_color_coding: Mono8
+isp_enable: false
