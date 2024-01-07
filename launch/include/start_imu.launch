@@ -1,6 +1,6 @@
 <launch>
-  <node  name="xsens_mti_node" pkg="xsens_mti_driver" type="xsens_mti_node" output="screen">
-    <param name="port" value="/dev/imu"/> 
+  <node name="xsens_mti_node" pkg="xsens_mti_driver" type="xsens_mti_node" output="screen">
+    <param name="port" value="/dev/imu"/>
     <rosparam command="load" file="$(find xsens_mti_driver)/param/xsens_mti_node.yaml" />
   </node>
 </launch>
