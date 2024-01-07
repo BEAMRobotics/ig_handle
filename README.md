@@ -1,5 +1,16 @@
 # ig-handle: a handheld inspector gadget
 
+<br>
+<p align='center'>
+  <table>
+    <tr>
+      <td><img src="./docs/ig_handle_photo.jpg" alt="Image 1" width="320" title="ig-handle"/></td>
+      <td><img src="./docs/ig_heron_photo.jpg" alt="Image 2" width="320" title="ig-heron"/></td>
+      <td><img src="./docs/ig_husky_photo.jpg" alt="Image 3" width="320" title="ig-husky"/></td>
+    </tr>
+  </table>
+</p>
+
 **ig-handle** is an open-source, hardware-synchronized LiDAR-visual-inertial sensor kit consisting of:
  - One [Velodyne Puck](https://velodyneLiDAR.com/products/puck/) LiDAR
  - Two [FLIR Blackfly S USB3](https://www.flir.com/products/blackfly-s-usb3/?model=BFS-U3-13Y3M-C&vertical=machine+vision&segment=iis) monochrome cameras
@@ -24,7 +35,7 @@ If you are interested in building your own **ig-handle**, the latest parts list,
 
 ## Installation
 
-For installation, please refer to the [Beam Installation Guide](https://github.com/BEAMRobotics/beam_robotics/wiki/Beam-Robotics-Installation-Guide). This guide covers the installation of dependencies (as required by **ig-handle** and supported robots **ig2** and **pierre**) on a clean Ubuntu 20.04 machine. We recommend setting your catkin workspace to the default directory `~/catkin_ws` as the commands documented in this README follow this convention.
+For installation, please refer to the [Beam Installation Guide](https://github.com/BEAMRobotics/beam_robotics/wiki/Beam-Robotics-Installation-Guide). This guide covers the installation of dependencies (as required by **ig-handle** and supported robots **ig-husky** and **ig-heron**) on a clean Ubuntu 20.04 machine. We recommend setting your catkin workspace to the default directory `~/catkin_ws` as the commands documented in this README follow this convention.
 
 ## Collect Raw Data
 
@@ -40,11 +51,11 @@ This command will record data to `~/my_folder/YYYY_MM_DD_HH_MM_SS/raw.bag`. Note
 
 For each robot that integrates **ig-handle**, there is a launch file that starts data collection for **ig-handle** plus additional sensors (see Section **Raw Data Description** for details). These launch files are invoked with a launch argument called `robot`:
 
-**pierre** adds cameras `F3` and `F4`, LiDAR `lidar_v`, and the DT100 sonar. Data is collected via:
+**ig-heron** adds cameras `F3` and `F4`, LiDAR `lidar_v`, and the DT100 sonar. Data is collected via:
 ```bash
 roslaunch ig_handle collect_raw_data.launch robot:=heron
 ```
-**ig2** adds cameras `F3` and `F4`, LiDAR `lidar_v`, and the Husky base and control packages. A [FLIR Boson Plus 640](https://www.flir.com/products/boson-plus/?model=22640A012&vertical=lwir&segment=oem) thermal camera is included, though is not tested. Data is collected via:
+**ig-husky** adds cameras `F3` and `F4`, LiDAR `lidar_v`, and the Husky base and control packages. A [FLIR Boson Plus 640](https://www.flir.com/products/boson-plus/?model=22640A012&vertical=lwir&segment=oem) thermal camera is included, though is not tested. Data is collected via:
 ```bash
 roslaunch ig_handle collect_raw_data.launch robot:=husky
 ```
@@ -62,8 +73,8 @@ roslaunch ig_handle collect_raw_data.launch
 ```
 Once data collection is complete, kill the terminal session via `ctrl+c`.
 
-#### ig2 and pierre
-To collect data in the field with robots **ig2** and **pierre**, we recommend the following steps:
+#### ig-husky and ig-heron
+To collect data in the field with robots **ig-husky** and **ig-heron**, we recommend the following steps:
 1. Connect your laptop to the handle's computer over ethernet and manually assign your laptop an ip address on the LiDAR network (ex. `192.168.1.151`).
 2. SSH into the handle computer via:
     ```bash
@@ -73,7 +84,6 @@ To collect data in the field with robots **ig2** and **pierre**, we recommend th
 
 3. Start a screen session via:
     ```bash
-    sudo apt install screen # if not installed
     screen
     ```
     press `enter` to start the session.
@@ -81,8 +91,8 @@ To collect data in the field with robots **ig2** and **pierre**, we recommend th
 4. Collect raw data (comment out the robot not in use)
     ```bash
     roslaunch ig_handle collect_raw_data.launch \
-    robot:=husky # ig2
-    robot:=heron # pierre
+    robot:=husky # ig-husky
+    robot:=heron # ig-heron
     ```
 5. Within the same terminal, press `ctrl+a` then `ctrl+d` to detach the screen process.
 6. Disconnect the ethernet cable and perform data collection.
@@ -107,7 +117,7 @@ For **ig-handle**, the following topics are recorded:
 | /lidar_h/velodyne_points  | sensor_msgs/PointCloud2     |
 | /pps/time                 | sensor_msgs/TimeReference   |
 
-For **pierre** and **ig2**, the following additional topics are recorded:
+For **ig-heron** and **ig-husky**, the following additional topics are recorded:
 | Topic                     | message types               |
 | ------------------------- | --------------------------- |
 | /F3/image_raw/compressed  | sensor_msgs/CompressedImage |
@@ -115,7 +125,7 @@ For **pierre** and **ig2**, the following additional topics are recorded:
 | /lidar_v/velodyne_packets | velodyne_msgs/VelodyneScan  |
 | /lidar_v/velodyne_points  | sensor_msgs/PointCloud2     |
 
-Further, **pierre** records `/DT100/sonar_scans` topics of message type `sensor_msgs/PointCloud2`, while **ig2** records `/thermal/image_raw/compressed` topics of message type `sensor_msgs/CompressedImage`. If additional topics are desired, `record_bag.sh` can be modified accordingly.
+Further, **ig-heron** records `/DT100/sonar_scans` topics of message type `sensor_msgs/PointCloud2`, while **ig-husky** records `/thermal/image_raw/compressed` topics of message type `sensor_msgs/CompressedImage`. If additional topics are desired, `record_bag.sh` can be modified accordingly.
 
 ### Raw Data Processing
 Raw data is processed using `scripts/process_raw_bag.py`. Its description and interface follows.
@@ -125,7 +135,7 @@ This script:
 1. restamps camera and IMU sensor messages with their appropriate time reference messages, and
 2. interpolates sonar messages against the reference PPS signal
 
-Acknowledging camera and IMU sensor messages (i.e. `sensor_msgs/CompressedImage` and `sensor_msgs/Imu`) take longer to serialize than time reference messages (i.e. `/cam/time` and `/imu/time`), the script discards camera and IMU sensor messages before the first time reference (based on serialized time) and then proceeds to restamp sensor messages with time references using a first-in-first-out queue. In testing, we observe no camera and IMU signal dropout for periods typical for data collection (i.e. 5-10 min), permitting such a simple offline time-synchronization strategy. This script throws an error when signal dropout is detected, which may happen if connections become loose. Sometimes, dropout occurs after an extended period of data collection, and we provide an argument `-dur` to allow the user to process the bag *before* this dropout occurs (to see where dropout occurs, use `rosrun rqt_bag rqt_bag` to visualize the raw bag `raw.bag`).
+Acknowledging camera and IMU sensor messages (i.e. `sensor_msgs/CompressedImage` and `sensor_msgs/Imu`) take longer to serialize than time reference messages (i.e. `/cam/time` and `/imu/time`), the script discards camera and IMU sensor messages before the first time reference (based on serialized time) and then proceeds to restamp sensor messages with time references using a first-in-first-out queue. In testing, we observe no camera and IMU signal dropout for periods typical for data collection (i.e. 5-10 min), permitting such a simple offline time-synchronization strategy. This script throws an error when signal dropout is detected, which may happen if connections become loose. Sometimes, dropout occurs after an extended period of data collection, and we provide an argument `--bag_end` which allows the user to process the bag *before* this dropout occurs. To see where dropout occurs, use `rosrun rqt_bag rqt_bag` to visualize the raw bag `raw.bag`. Further, the argument `--clip_restamp_topics` can be used to manually assign the time at which data and time topics are processed using a first-in-first-out queue to avoid errors in teensy startup.
 
 #### Interface:
 The script's interface is accessed via:
@@ -133,12 +143,12 @@ The script's interface is accessed via:
 cd ~/catkin_ws/src/ig_handle/scripts
 python3 process_raw_bag.py --help
 ```
-The bagfile argument `-b` needs to be set every time to find the input bag. The values for data and time topics `-dr, -tr, -di, -ti` are set correctly by default, so only specify those arguments if you've changed the data collection process. Below is an example of how to process collected raw data:
+The bagfile argument `--bag` needs to be set every time to find the input bag. The values for data and time topics are set correctly by default, so only specify those arguments if you have changed the data collection process. Below is an example of how to process collected raw data:
 ```bash
 cd ~/catkin_ws/src/ig_handle/scripts
-python3 process_raw_bag.py -b ~/bags/YYYY_MM_DD_HH_MM_SS/raw.bag
+python3 process_raw_bag.py --bag ~/bags/YYYY_MM_DD_HH_MM_SS/raw.bag
 ```
-The script will output a rosbag called `output.bag` to the same folder specified via the `-b` argument, which can then be passed to a SLAM algorithm. Note that in testing, we observe that a warm-up time of ~5 seconds is required for the LiDAR to synch with the RTC, and therefore recommend:
+The script will output a rosbag called `output.bag` to the same folder specified via the `--bag` argument, which can then be passed to a SLAM algorithm. Note that in testing, we observe that a warm-up time of ~5 seconds is required for the LiDAR to synch with the RTC, and therefore recommend:
 ```bash
 cd ~/bags/YYYY_MM_DD_HH_MM_SS/
 rosbag play --start=5 output.bag --pause
