@@ -15,5 +15,3 @@ line_mode: 'Output'
 
 # Image parameters
 auto_white_balance: Continuous
-image_format_color_coding: Mono8
-isp_enable: false
