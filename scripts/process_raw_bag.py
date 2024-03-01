@@ -40,24 +40,30 @@ def topic_to_dict(bag: rosbag.Bag, topics: list, type="msg") -> dict:
 
 class IgPostProcess:
     def __init__(self, args):
-        # member variables
+        # get args
         self.bag = rosbag.Bag(args.bag)
-        self.bag_duration = args.bag_duration
+        self.bag_start = args.bag_start
+        self.bag_end = args.bag_end
         self.data_restamp_topics = args.data_restamp_topics
         self.time_restamp_topics = args.time_restamp_topics
+        self.clip_restamp_topics = args.clip_restamp_topics
         self.data_interp_topics = args.data_interp_topics
         self.time_interp_topics = args.time_interp_topics
 
-        logging.info(f"Parsing arguments...")
+        logging.info("Parsing arguments...")
 
-        # set bag end time
-        if (args.bag_duration < 0):
-            raise Exception("bag duration must be a positive integer.")
+        # set bag start and end time
+        if self.bag_start < 0:
+            self.bag_start_time = rospy.Time(self.bag.get_start_time())
+        else:
+            self.bag_start_time = rospy.Time(
+                self.bag.get_start_time()) + rospy.Duration.from_sec(self.bag_start)
 
-        self.bag_end_time = rospy.Time(self.bag.get_end_time())
-        if args.bag_duration != 0:
+        if self.bag_end < 0:
+            self.bag_end_time = rospy.Time(self.bag.get_end_time())
+        else:
             self.bag_end_time = rospy.Time(
-                self.bag.get_start_time()) + rospy.Duration.from_sec(self.bag_duration)
+                self.bag.get_start_time()) + rospy.Duration.from_sec(self.bag_end)
 
         # ensure each data topic has a time topic
         if (len(self.data_restamp_topics) != len(self.time_restamp_topics)):
@@ -95,11 +101,10 @@ class IgPostProcess:
         for topic, msg, t in self.bag.read_messages():
             is_not_restamp_topic = topic not in self.data_restamp_topics and topic not in self.time_restamp_topics
             is_not_interp_topic = topic not in self.data_interp_topics and topic not in self.time_interp_topics
-            if is_not_restamp_topic and is_not_interp_topic and t <= self.bag_end_time:
-                self.out_bag.write(topic, msg, t)
+            if is_not_restamp_topic and is_not_interp_topic and t >= self.bag_start_time and t <= self.bag_end_time:
+                self.out_bag.write(topic, msg, msg.header.stamp)
 
-        logging.info(f"Parsing complete.")
-        logging.info(f"Processing {self.bag.filename}...")
+        logging.info(f"Parsing complete. Processing {self.bag.filename}...")
 
         # process
         self.restamp()
@@ -137,6 +142,27 @@ class IgPostProcess:
                         f"All messages on {topic} are recorded before their associated time topic and will not be restamped.")
                     continue
 
+            # clip data and time messages before a use-defined clip time
+            bag_clip_time = rospy.Time(
+                self.bag.get_start_time()) + rospy.Duration.from_sec(self.clip_restamp_topics[i])
+
+            while self.messages_restamp_t[i][0] < bag_clip_time:
+                try:
+                    self.messages_restamp_msg[i].pop(0)
+                    self.messages_restamp_t[i].pop(0)
+                except:
+                    logging.warning(
+                        f"All messages on {topic} are recorded before the user specified clip time of {bag_clip_time}.")
+                    continue
+            while self.stamps_restamp_t[i][0] < bag_clip_time:
+                try:
+                    self.stamps_restamp_msg[i].pop(0)
+                    self.stamps_restamp_t[i].pop(0)
+                except:
+                    logging.warning(
+                        f"All messages on {topic} are recorded before the user specified clip time of {bag_clip_time}.")
+                    continue
+
             # clip data and stamp messages after bag end time
             while self.messages_restamp_t[i][-1] > self.bag_end_time:
                 try:
@@ -163,10 +189,12 @@ class IgPostProcess:
                     f"{topic} contains {num_stamps} stamps and {num_messages} messages. There was signal dropout during data collection and {topic} will not be restamped. ")
                 continue
 
-            # associate stamps with messages assuming first-in-first-out queue
-            logging.info(f"Check completed, restamping...")
+            # associate stamps with messages assuming FIFO queue
+            logging.info("Check completed, restamping...")
             while len(self.messages_restamp_msg[i]) > 0:
                 try:
+                    time_t = self.stamps_restamp_t[i].pop(0)
+                    data_t = self.messages_restamp_t[i].pop(0)
                     time_msg = self.stamps_restamp_msg[i].pop(0)
                     data_msg = self.messages_restamp_msg[i].pop(0)
                 except:
@@ -174,8 +202,10 @@ class IgPostProcess:
                         f"Restamping stopped at {topic}:{data_msg.header.seq}. Ran out of stamps.")
                     break
                 data_msg.header.stamp = time_msg.time_ref
+                if (min(time_t, data_t) < self.bag_start_time):
+                    continue
                 self.out_bag.write(topic, data_msg, time_msg.time_ref)
-            logging.info(f"Restamping completed.")
+            logging.info("Restamping completed.")
 
     def interpolate(self):
         """
@@ -198,7 +228,7 @@ class IgPostProcess:
                     f"{topic} contains fewer than two stamps required for interpolation.")
                 continue
 
-            logging.info(f"Check completed, interpolating...")
+            logging.info("Check completed, interpolating...")
 
             # instantiate lists
             t1_nsec_ros = []  # x1
@@ -225,11 +255,11 @@ class IgPostProcess:
             for j in range(len(self.messages_interp_msg[i])):
                 if not np.isnan(t1_nsec_pps[j]):
                     time_msg = rospy.Time.from_sec(t1_nsec_pps[j])
-                    if time_msg < self.bag_end_time:
+                    if time_msg >= self.bag_start_time and time_msg <= self.bag_end_time:
                         data_msg = self.messages_interp_msg[i][j]
                         data_msg.header.stamp = time_msg
                         self.out_bag.write(topic, data_msg, time_msg)
-            logging.info(f"Interpolation completed.")
+            logging.info("Interpolation completed.")
 
     def save(self):
         """
@@ -242,18 +272,22 @@ class IgPostProcess:
 def main(args):
     parser = argparse.ArgumentParser(
         description='This script is used to post-process a raw bag from ig_handle. This script restamps topics with their appropriate reference times and interpolates reference times for soft-synchronized sensors.')
-    parser.add_argument('-b', '--bag', type=str,
-                        required=True,  help='input bag file')
+    parser.add_argument('--bag', type=str, required=True,
+                        help='input bag file')
     parser.add_argument(
-        '-dr', '--data_restamp_topics', default=["/imu/data", "/F1/image_raw/compressed", "/F2/image_raw/compressed", "/F3/image_raw/compressed", "/F4/image_raw/compressed"], type=str, nargs='+', help='list of sensor data message topics to be restamped')
+        '--data_restamp_topics', default=["/imu/data", "/F1/image_raw/compressed", "/F2/image_raw/compressed", "/F3/image_raw/compressed", "/F4/image_raw/compressed"], type=str, nargs='+', help='list of sensor data message topics to be restamped')
     parser.add_argument(
-        '-tr', '--time_restamp_topics', default=["/imu/time", "/cam/time", "/cam/time", "/cam/time", "/cam/time"], type=str, nargs='+', help='list of time reference topics corresponding to restamped sensor data message topics')
+        '--time_restamp_topics', default=["/imu/time", "/cam/time", "/cam/time", "/cam/time", "/cam/time"], type=str, nargs='+', help='list of time reference topics corresponding to restamped sensor data message topics')
     parser.add_argument(
-        '-di', '--data_interp_topics', default=["/DT100/sonar_scans"], type=str, nargs='+', help='list of sensor data message topics to be interpolated')
+        '--data_interp_topics', default=["/DT100/sonar_scans"], type=str, nargs='+', help='list of sensor data message topics to be interpolated')
     parser.add_argument(
-        '-ti', '--time_interp_topics', default=["/pps/time"], type=str, nargs='+', help='list of time reference topics corresponding to interpolated sensor data message topics')
+        '--time_interp_topics', default=["/pps/time"], type=str, nargs='+', help='list of time reference topics corresponding to interpolated sensor data message topics')
     parser.add_argument(
-        '-dur', '--bag_duration', default=0, type=int, help='duration of data collection (in seconds) for output.bag')
+        '--clip_restamp_topics', default=[0.0, 0.0, 0.0, 0.0, 0.0], type=float, nargs='+', help='list of times (in seconds) for sensor data message topics to be clipped')
+    parser.add_argument(
+        '--bag_start', default=-1.0, type=float, help='start time (in seconds) for output.bag according to serialization time. Default is start of bag.')
+    parser.add_argument(
+        '--bag_end', default=-1.0, type=float, help='end time (in seconds) for output.bag according to serialization time. Default is end of bag.')
 
     # parse args and process
     args = parser.parse_args()
