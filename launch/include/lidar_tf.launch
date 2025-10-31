@@ -1,0 +1,5 @@
+<launch>
+  <!-- Static TF between lidar_h_link and lidar_v_link -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="lidar_h_to_v_tf" args="-0.165 0 -0.230 3.1416 -1.5708 3.1416 lidar_h_link lidar_v_link"/>
+</launch>
+

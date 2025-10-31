@@ -3,7 +3,7 @@
     <include file="$(find velodyne_pointcloud)/launch/VLP16_points.launch">
       <arg name="device_ip" default="192.168.1.202" />
       <arg name="frame_id" default="lidar_v_link" />
-      <arg name="gps_time" default="true" />
+      <arg name="gps_time" default="false" />
       <arg name="port" default="2369" />
     </include>
   </group>

@@ -1,5 +1,5 @@
 <launch>
-  <arg name="robot" default="handle"/>
+  <arg name="robot" default="heron"/>
   <arg name="output" default="~/bags"/>
 
   <include if="$(eval arg('robot')=='handle')" file="$(find ig_handle)/launch/include/handle_includes.launch" pass_all_args="true"/>

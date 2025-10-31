@@ -2,27 +2,26 @@ network:
   version: 2
   renderer: networkd
   ethernets:
-    enp2s0: # LiDAR network
+    enp2s0: {}
+    enx000fc910b495: {}
+    enx000fc910b497: {}
+  bridges:
+    br0:
+      interfaces: [enp2s0, enx000fc910b495, enx000fc910b497]
       addresses:
-        - 192.168.1.150/24
+        - 192.168.1.150/24   # LiDAR network
+        - 192.168.0.3/24     # Sonar network
+      nameservers:
+        addresses: [8.8.8.1, 1.1.1.1]
       routes:
         - to: 0.0.0.0/0
           via: 192.168.1.1
           table: 101
-      routing-policy:
-        - from: 192.168.1.0/24
-          table: 101
-      nameservers:
-          addresses: [8.8.8.1, 1.1.1.1]
-    enx000fc910b497: # Sonar network
-      addresses:
-        - 192.168.0.4/24
-      routes:
         - to: 0.0.0.0/0
           via: 192.168.0.1
           table: 102
       routing-policy:
+        - from: 192.168.1.0/24
+          table: 101
         - from: 192.168.0.0/24
           table: 102
-      nameservers:
-          addresses: [8.8.8.1, 1.1.1.1]
